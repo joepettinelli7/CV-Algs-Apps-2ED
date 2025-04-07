@@ -5,9 +5,9 @@ import numpy as np
 
 class Line2D:
     """
-    The class to represent a 2D line. By default, Line2D is homogenous line (ax + by + cw = 0)
-    defined by the cross product of the two homogenous points. It can be converted to
-    cartesian line (ax + by + c = 0).
+    The class to represent a 2D line. By default, Line2D is homogenous line (ax + by + cw = 0).
+    It can be defined by the cross product of the two homogenous points, or by the coefficients
+    a, b, c. It can be converted to cartesian line (ax + by + c = 0).
     """
     
     def __init__(self, p1: Optional[Point2D] = None, p2: Optional[Point2D] = None,
@@ -48,7 +48,7 @@ class Line2D:
     @property
     def a(self) -> Optional[float]:
         """
-        
+        Coefficient of homogenous line
         """
         return self._a
 
@@ -139,10 +139,10 @@ class Line2D:
         if self._p1 and self._p2:
             pv1 = self._p1.vector
             pv2 = self._p2.vector
-            cp = np.cross(pv1, pv2)
+            cp = np.cross(pv1, pv2, axis=0)
         else:
             assert self._a and self._b and self._c
-            cp = np.array([self._a, self._b, self._c])
+            cp = np.vstack([self._a, self._b, self._c])
         return cp
 
     def intersection_with(self, other: "Line2D") -> Point2D:
@@ -155,15 +155,12 @@ class Line2D:
         Returns:
             The intersection point
         """
-        intersec = np.cross(self.vector, other.vector)
+        intersec = np.cross(self.vector, other.vector, axis=0)
         return Point2D(x=intersec[0], y=intersec[1], w=intersec[2])
 
     def contains_point(self, point: Point2D) -> bool:
         """
         If point is on line then dot product will equal 0.0
         """
-        return np.dot(point.vector, self.vector).item() == 0.0
-
-
-
+        return np.dot(self.vector.T, point.vector).item() == 0.0
         

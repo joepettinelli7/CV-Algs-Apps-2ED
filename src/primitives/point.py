@@ -47,17 +47,17 @@ class Point2D():
     @property
     def vector(self) -> np.ndarray:
         """
-        Make an array to represent a vector.
-        In the book, all vectors are column
-        vectors that post-multiply matrices
+        Make an array to represent a column vector.
+        In the book, all vectors are column vectors
+        that post-multiply matrices unless specified.
         
         Returns:
-            A ndarray
+            A ndarray with shape (n, 1)
         """
         if self._w:
-            return np.array([self._x, self._y, self._w])
+            return np.vstack([self._x, self._y, self._w])
         else:
-            return np.array([self._x, self._y])
+            return np.vstack([self._x, self._y])
     
     def to_homogenous(self, w: Union[int, float] = 1.0) -> None:
         """
