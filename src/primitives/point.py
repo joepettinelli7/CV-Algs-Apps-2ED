@@ -5,11 +5,14 @@ import numpy as np
 
 class Point2D():
     """
-    The class to represent a 2D point. By default, Point2D is homogenous (x, y, w) 
+    The class to represent a 2D point. By default, Point2D is homogenous (x, y, w). 
     Point2D can be converted to cartesian (x, y) and back to homogenous.
     """
     
     def __init__(self, x: float = 0.0, y: float = 0.0, w: Optional[float] = 1.0) -> None:
+        """
+        Setting w to 1.0 is equivalent to the cartesian coordinate (x, y)
+        """
         self._x = x
         self._y = y
         if w == 0.0:
@@ -18,6 +21,12 @@ class Point2D():
         self._w = w
 
     def __repr__(self) -> str:
+        """
+        Use the vector / coordinates to represent the point
+        
+        Returns:
+            The vector (x, y, w) or (x, y)
+        """
         if self._w is None:
             return f"Point2D({self.vector})"
         else:
@@ -25,20 +34,40 @@ class Point2D():
 
     @property
     def x(self) -> float:
+        """
+        
+        Returns:
+            The x coordinate
+        """
         return self._x
 
     @property
     def y(self) -> float:
+        """
+
+        Returns:
+            The y coordinate
+        """
         return self._y
 
     @property
     def w(self) -> Optional[float]:
+        """
+        Will be None when Point2D represents a
+        cartesian coordinate. A homogenous coordinate
+        when w is 1.0 is equivalent to cartesian (x, y).
+        
+        Returns:
+            The w coordinate
+        """
         return self._w
 
     @property
     def is_homogenous(self) -> bool:
         """
-
+        w will be a float when Point2D is representing
+        a homogeneous point. It will be None when cartesian.
+        
         Returns:
             True if self is homogenous
         """
@@ -61,7 +90,7 @@ class Point2D():
     
     def to_homogenous(self, w: Union[int, float] = 1.0) -> None:
         """
-        Convert an inhomogenous point to homogenous.
+        Convert a cartesian point to homogenous.
 
         Args:
             w: The scaling factor
@@ -81,14 +110,14 @@ class Point2D():
     def from_homogenous(self) -> None:
         """
         Convert from homogenous point to cartesian / inhomogenous.
-        If w is 0, then conversion is not allowed.
+        If w is 0.0, then conversion is not allowed.
         """
-        if self._w:
+        if self._w and self._w != 0.0:
             self._x /= self._w
             self._y /= self._w
             self._w = None
         else:
-            logging.error(" Already cartesian. Aborting conversion.")
+            logging.error(" Already cartesian or w is 0.0. Aborting conversion.")
 
     def __eq__(self, other: "Point2D") -> bool:
         """
@@ -97,8 +126,8 @@ class Point2D():
         For points to be equivalent:
             1. x and y are equivalent (For homogenous points, vectors that differ
                only by w are still considered to be equivalent).
-            2. The representations should be the same (ex: both are cartesian).
+            2. The representations should be the same (ex: both are homogenous).
         """
         spatial_eq = self._x == other._x and self._y == other._y
-        repr_eq = (self._w is None) == (self._w is None)
+        repr_eq = (self._w is None) == (other._w is None)
         return spatial_eq and repr_eq        
