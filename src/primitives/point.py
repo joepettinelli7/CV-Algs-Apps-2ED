@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, List
 import numpy as np
 
 
@@ -122,12 +122,75 @@ class Point2D():
     def __eq__(self, other: "Point2D") -> bool:
         """
         Determine whether the points are equivalent.
-
+        
         For points to be equivalent:
             1. x and y are equivalent (For homogenous points, vectors that differ
                only by w are still considered to be equivalent).
             2. The representations should be the same (ex: both are homogenous).
+
+        Args:
+            other: The other point
+
+        Returns:
+            True if points are equivalent
         """
         spatial_eq = self._x == other._x and self._y == other._y
         repr_eq = (self._w is None) == (other._w is None)
-        return spatial_eq and repr_eq        
+        return spatial_eq and repr_eq
+
+    def __add__(self, other: "Point2D") -> "Point2D":
+        """
+        Add cartesian points (x1 + x2 and y1 + y2).
+
+        Args:
+            other: The other point
+
+        Returns:
+            The sum of the points
+        """
+        if isinstance(other, Point2D):
+            assert not other.is_homogenous and not self.is_homogenous
+            self._x = self._x + other.x
+            self._y = self._y + other.y
+            return self
+        else:
+            raise TypeError(f"Cannot add {other.__class__} object to Point2D object.")
+
+    def __sub__(self, other: "Point2D") -> "Point2D":
+        """
+        Subtract cartesian points (x1 - x2 and y1 - y2).
+
+        Args:
+            other: The other point
+
+        Returns:
+            The difference of the points
+        """
+        if isinstance(other, Point2D):
+            assert not other.is_homogenous and not self.is_homogenous
+            self._x = self._x - other.x
+            self._y = self._y - other.y
+            return self
+        else:
+            raise TypeError(f"Cannot subtract {other.__class__} object from Point2D object.")
+    
+    def __truediv__(self, other: Union["Point2D", int]) -> "Point2D":
+        """
+        Divide cartesian points (x1 / x2 and y1 / y2).
+
+        Args:
+            other: The other point or float
+
+        Returns:
+            The sum of the points
+        """
+        if isinstance(other, Point2D) or isinstance(other, int):
+            if isinstance(other, int):
+                other = Point2D(other, other, None)
+            assert not other.is_homogenous and not self.is_homogenous
+            self._x = self._x / other.x
+            self._y = self._y / other.y
+            return self
+        else:
+            raise TypeError(f"Cannot divide Point2D object with {other.__class__} object.")
+        

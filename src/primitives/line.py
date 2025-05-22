@@ -138,11 +138,11 @@ class Line2D:
         if self._p1 is not None and self._p2 is not None:
             pv1 = self._p1.vector
             pv2 = self._p2.vector
-            cp = np.cross(pv1, pv2, axis=0)
+            vec = np.cross(pv1, pv2, axis=0)
         else:
-            assert self._a and self._b and self._c
-            cp = np.vstack([self._a, self._b, self._c])
-        return cp
+            assert self._a is not None and self._b is not None and self._c is not None
+            vec = np.vstack([self._a, self._b, self._c])
+        return vec
 
     def intersection_with(self, other: "Line2D") -> Point2D:
         """
@@ -159,7 +159,7 @@ class Line2D:
 
     def contains_point(self, point: Point2D) -> bool:
         """
-        If point is on line then dot product will equal 0.0
+        If point is on line then dot product will equal 0.0.
 
         Args:
             point: Point to check
@@ -168,4 +168,30 @@ class Line2D:
             True if point lies on line
         """
         return np.dot(self.vector.T, point.vector).item() == 0.0
+
+    def get_point_y_from_x(self, x: Union[float, list[float]]) -> Union[float, list[float]]:
+        """
+        Get the y coordinate on line given x coordinate
+
+        Args:
+            x: The x coordinate
+
+        Returns:
+            The corresponding y coordinate on the line
+        """
+        y = (-self._a * x - self._c) / self._b
+        return y
+
+    def get_point_x_from_y(self, y: Union[float, list[float]]) -> Union[float, list[float]]:
+        """
+        Get the x coordinate on line given y coordinate
+
+        Args:
+            y: The y coordinate
+
+        Returns:
+            The corresponding x coordinate on the line
+        """
+        x = (-self._b * y - self._c) / self._a
+        return x
         
