@@ -1,5 +1,2 @@
 .ipynb_checkpoints
-*/__pycache__/
-*/primitives/__pycache__/
-*/primitives_lists/__pycache__/
-*/test_primitives/__pycache__/
+**/*.pyc

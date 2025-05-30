@@ -27,7 +27,7 @@ class Points2D:
         return self._points
 
     @property
-    def array(self) -> np.ndarray:
+    def array_form(self) -> np.ndarray:
         """
         Make an array to represent all points to be used
         with numpy for calculations.
@@ -60,8 +60,8 @@ class Points2D:
         Returns:
             The best line
         """
-        centroid: np.ndarray = np.mean(self.array, axis=0)
-        centered_points: np.ndarray = self.array - centroid
+        centroid: np.ndarray = np.mean(self.array_form, axis=0)
+        centered_points: np.ndarray = self.array_form - centroid
         cov_mat: np.ndarray = np.cov(centered_points.T, bias=True)
         # cov_mat: np.ndarray = self.calculate_covariance_matrix(verbose=verbose)
         eigvals, eigvecs = np.linalg.eig(cov_mat)
@@ -93,7 +93,7 @@ class Points2D:
             A 2x2 matrix
         """
         centroid: np.ndarray = self.calculate_centroid(verbose=verbose)
-        centered_points: np.ndarray = self.array - centroid
+        centered_points: np.ndarray = self.array_form - centroid
         cov_mat: np.ndarray = np.cov(centered_points.T, bias=True)
         if verbose:
             print(f"centered_points: {centered_points}\n")
@@ -111,7 +111,7 @@ class Points2D:
             The centroid / mean of all points as cartesian
         """
         # mean of each column [x mean, y mean].
-        centroid: np.ndarray = np.mean(self.array, axis=0)
+        centroid: np.ndarray = np.mean(self.array_form, axis=0)
         if verbose:
             print(f"centroid: {centroid}\n")
         return centroid

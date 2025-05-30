@@ -62,6 +62,24 @@ class Point2D():
         """
         return self._w
 
+    @x.setter
+    def x(self, new_x: float) -> None:
+        """
+        """
+        self._x = new_x
+
+    @y.setter
+    def y(self, new_y: float) -> None:
+        """
+        """
+        self._y = new_y
+
+    @w.setter
+    def w(self, new_w: float) -> None:
+        """
+        """
+        self._w = new_w
+
     @property
     def is_homogenous(self) -> bool:
         """
