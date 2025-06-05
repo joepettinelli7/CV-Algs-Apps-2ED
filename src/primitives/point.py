@@ -3,34 +3,56 @@ from typing import Optional, Union, List
 import numpy as np
 
 
-class Point2D():
+class Point2D:
     """
-    The class to represent a 2D point. By default, Point2D is homogenous (x, y, w). 
-    Point2D can be converted to cartesian (x, y) and back to homogenous.
+    The class to represent a 2D point. Point2D is currently always
+    homogenous (x, y, w) for simplicity. If w equals 1.0 this is equivalent
+    to the cartesian coordinate, and if w equals 0.0 this is a point at infinity
+    which has a direction with no fixed location. See page 30.
     """
     
-    def __init__(self, x: float = 0.0, y: float = 0.0, w: Optional[float] = 1.0) -> None:
+    def __init__(self, x: float = 0.0, y: float = 0.0, w: float = 1.0) -> None:
         """
-        Setting w to 1.0 is equivalent to the cartesian coordinate (x, y)
         """
         self._x = x
         self._y = y
         if w == 0.0:
-            w = 1.0
-            logging.warning(" Overriding to w = 1.0")
+            logging.warning(" Created a point at infinity.")
         self._w = w
 
     def __repr__(self) -> str:
         """
-        Use the vector / coordinates to represent the point
+        Use the vector / coordinates to represent the point.
         
         Returns:
-            The vector (x, y, w) or (x, y)
+            The column vector x, y, w.
         """
-        if self._w is None:
-            return f"Point2D({self.vector})"
-        else:
-            return f"Point2D({self.vector})"
+        return f"Point2D({self.vector})"
+
+    @property
+    def vector(self) -> np.ndarray:
+        """
+        Make a numpy array to represent a column vector.
+        In the book, all point vectors are column vectors
+        that post-multiply matrices unless specified.
+        
+        Returns:
+            The (3, 1) shape column vector
+        """
+        return np.vstack([self._x, self._y, self._w])
+
+    @property
+    def cartesian_vector(self) -> Optional[np.ndarray]:
+        """
+        First need to normalize. Do not change instance
+        variables, create new variables to return.
+
+        Returns:
+            The vector with only x and y (no w) with shape (2, 1)
+        """
+        cartesian_x = self._x / self._w
+        cartesian_y = self._y / self._w
+        return np.vstack([cartesian_x, cartesian_y])
 
     @property
     def x(self) -> float:
@@ -51,11 +73,11 @@ class Point2D():
         return self._y
 
     @property
-    def w(self) -> Optional[float]:
+    def w(self) -> float:
         """
-        Will be None when Point2D represents a
-        cartesian coordinate. A homogenous coordinate
-        when w is 1.0 is equivalent to cartesian (x, y).
+        A homogenous coordinate with w = 1.0 
+        is equivalent to cartesian (x, y). When w = 0.0,
+        this is a point at infinity.
         
         Returns:
             The w coordinate
@@ -65,86 +87,80 @@ class Point2D():
     @x.setter
     def x(self, new_x: float) -> None:
         """
+        Set x value
+        
+        Args:
+            new_x: New x value
         """
         self._x = new_x
 
     @y.setter
     def y(self, new_y: float) -> None:
         """
+        Set y value
+
+        Args:
+            new_y: New y value
         """
         self._y = new_y
 
     @w.setter
     def w(self, new_w: float) -> None:
         """
-        """
-        self._w = new_w
-
-    @property
-    def is_homogenous(self) -> bool:
-        """
-        w will be a float when Point2D is representing
-        a homogeneous point. It will be None when cartesian.
-        
-        Returns:
-            True if self is homogenous
-        """
-        return self._w is not None
-
-    @property
-    def vector(self) -> np.ndarray:
-        """
-        Make an array to represent a column vector.
-        In the book, all vectors are column vectors
-        that post-multiply matrices unless specified.
-        
-        Returns:
-            A ndarray with shape (n, 1)
-        """
-        if self._w:
-            return np.vstack([self._x, self._y, self._w])
-        else:
-            return np.vstack([self._x, self._y])
-    
-    def to_homogenous(self, w: Union[int, float] = 1.0) -> None:
-        """
-        Convert a cartesian point to homogenous.
+        Set w value
 
         Args:
-            w: The scaling factor
+            new_w: New w value
         """
-        if not self._w:
-            if isinstance(w, int):
-                w = float(w)
-            if w != 0.0:
-                self._x *= w
-                self._y *= w
-                self._w = w
-            else:
-                logging.warning(f" Do not except w == 0, so aborting conversion.")
-        else:
-            logging.warning(f" Already homogenous, so aborting conversion.")
+        if new_w == 0.0:
+            logging.warning(" Created a point at infinity.")
+        self._w = new_w
+    
+    def homogenize(self, w: Union[int, float] = 1.0) -> None:
+        """
+        In-place scale all values by w.
 
-    def from_homogenous(self) -> None:
+        Args:
+            w: The scaling factor.
         """
-        Convert from homogenous point to cartesian / inhomogenous.
-        If w is 0.0, then conversion is not allowed.
+        if isinstance(w, int):
+            w = float(w)
+        self._x *= w
+        self._y *= w
+        self._w *= w
+
+    def normalize(self) -> None:
         """
-        if self._w and self._w != 0.0:
+        In-place normalize homogenous point so that w = 1.
+        """
+        if self._w != 0.0:
             self._x /= self._w
             self._y /= self._w
-            self._w = None
+            self._w /= self._w
         else:
-            logging.error(" Already cartesian or w is 0.0. Aborting conversion.")
+            logging.warning(" Point was at infinity, so aborted normalize.")
+
+    def normalized(self) -> Optional["Point2D"]:
+        """
+        Normalize homogenous point so that w = 1.
+
+        Returns:
+            New instance of point that is normalized
+        """
+        if self._w != 0.0:
+            norm_x = self._x / self._w
+            norm_y = self._y / self._w
+            norm_w = self._w / self._w
+            return Point2D(norm_x, norm_y, norm_w)
+        else:
+            logging.warning(" Point was at infinity, so aborted normalize.")
 
     def __eq__(self, other: "Point2D") -> bool:
         """
         Determine whether the points are equivalent.
         
-        For points to be equivalent:
-            1. x and y are equivalent (For homogenous points, vectors that differ
-               only by w are still considered to be equivalent).
-            2. The representations should be the same (ex: both are homogenous).
+        For points to be equivalent, x and y are equivalent (For homogenous points,
+        vectors that differ only by w are still considered to be equivalent).
 
         Args:
             other: The other point
@@ -152,63 +168,129 @@ class Point2D():
         Returns:
             True if points are equivalent
         """
-        spatial_eq = self._x == other._x and self._y == other._y
-        repr_eq = (self._w is None) == (other._w is None)
-        return spatial_eq and repr_eq
+        if self._w == 0.0 or other.w == 0.0:
+            x_eq = self._x == other.x
+            y_eq = self._y == other.y
+        else:
+            x_eq = self._x / self._w == other.x / other.w
+            y_eq = self._y / self._w == other.y / other.w
+        return x_eq and y_eq
 
     def __add__(self, other: "Point2D") -> "Point2D":
         """
-        Add cartesian points (x1 + x2 and y1 + y2).
+        Add point with point
+            - point + point = point (in cartesian space)*
+            - point + vector = translated point
+            - vector + vector = vector
+
+        Args:
+            other: The other point or vector
+
+        Returns:
+            New instance that is sum of both points
+        """
+        assert isinstance(other, Point2D), f"Other point is type {other.__class__}."
+        if self._w == 0.0 or other.w == 0.0:
+            x_sum = self._x + other.x
+            y_sum = self._y + other.y
+            w_sum = self._w + other.w
+        else:
+            # point + point (normalize to w=1 then add x, y)
+            # currently only used to find rectangle center.
+            self_norm = self.normalized()
+            other_norm = other.normalized()
+            x_sum = (self_norm.x + other_norm.x)
+            y_sum = (self_norm.y + other_norm.y)
+            w_sum = 1.0
+        return Point2D(x_sum, y_sum, w_sum)
+
+    def __iadd__(self, other: "Point2D") -> "Point2D":
+        """
+        In-place add points with same logic as __add__.
 
         Args:
             other: The other point
 
         Returns:
-            The sum of the points
+            The same instance that is sum of both points
         """
-        if isinstance(other, Point2D):
-            assert not other.is_homogenous and not self.is_homogenous
-            self._x = self._x + other.x
-            self._y = self._y + other.y
+        assert isinstance(other, Point2D), f"Other point is type {other.__class__}."
+        if self._w == 0.0 or other.w == 0.0:
+            self._x += other.x
+            self._y += other.y
+            self._w += other.w
             return self
         else:
-            raise TypeError(f"Cannot add {other.__class__} object to Point2D object.")
+            # point + point
+            raise NotImplementedError
 
     def __sub__(self, other: "Point2D") -> "Point2D":
         """
-        Subtract cartesian points (x1 - x2 and y1 - y2).
+        Subtract other from point
+            - point - point = vector
+            - point - vector = translated point
+            - vector - vector = vector
 
         Args:
             other: The other point
 
         Returns:
-            The difference of the points
+            New instance that is difference of the points
         """
-        if isinstance(other, Point2D):
-            assert not other.is_homogenous and not self.is_homogenous
-            self._x = self._x - other.x
-            self._y = self._y - other.y
-            return self
+        assert isinstance(other, Point2D), f"Other point is type {other.__class__}."
+        if self._w == 0.0 or other.w == 0.0:
+            x_diff = self._x - other.x
+            y_diff = self._y - other.y
+            w_diff = self._w - other.w
         else:
-            raise TypeError(f"Cannot subtract {other.__class__} object from Point2D object.")
-    
-    def __truediv__(self, other: Union["Point2D", int]) -> "Point2D":
+            # point - point
+            assert self._w == 1.0 and other.w == 1.0, "Not implemented yet."
+            x_diff = self._x - other.x
+            y_diff = self._y - other.y
+            w_diff = 0.0
+        return Point2D(x_diff, y_diff, w_diff)
+
+    def __isub__(self, other: "Point2D") -> Optional["Point2D"]:
         """
-        Divide cartesian points (x1 / x2 and y1 / y2).
+        In-place subtract points with same logic as __sub__.
 
         Args:
-            other: The other point or float
+            other: The other point
 
         Returns:
-            The sum of the points
+            The same instance that is difference of the points
         """
-        if isinstance(other, Point2D) or isinstance(other, int):
-            if isinstance(other, int):
-                other = Point2D(other, other, None)
-            assert not other.is_homogenous and not self.is_homogenous
-            self._x = self._x / other.x
-            self._y = self._y / other.y
-            return self
+        assert isinstance(other, Point2D), f"Other point is type {other.__class__}."
+        if self._w == 0.0 or other.w == 0.0:
+            self._x -= other.x
+            self._y -= other.y
+            self._w -= other.w
         else:
-            raise TypeError(f"Cannot divide Point2D object with {other.__class__} object.")
+            # point - point
+            assert self._w == 1.0 and other.w == 1.0, "Not implemented yet."
+            self._x -= other.x
+            self._y -= other.y
+            self._w = 0.0
+        return self
+
+    def __truediv__(self, other: int) -> "Point2D":
+        """
+        Only implemented to be used when finding center point of points
+        like in the Rectangle2D class.
+
+        Args:
+            other: Number to divide by
+
+        Returns:
+            A new object of point
+        """
+        assert other != 0
+        assert self._w == 1.0
+        new_x = self._x / other
+        new_y = self._y / other
+        return Point2D(new_x, new_y, self._w)
         
+
+if __name__ == "__main__":
+    pass
+    

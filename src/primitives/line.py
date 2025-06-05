@@ -1,3 +1,4 @@
+import math
 from typing import Callable, Optional, Union
 import numpy as np
 from src.primitives.point import Point2D
@@ -5,144 +6,183 @@ from src.primitives.point import Point2D
 
 class Line2D:
     """
-    The class to represent a 2D line. By default, Line2D is a homogenous line (Ax + By + Cw = 0).
-    A Line2D can be instantiated with two homogenous points with form (x, y, w), or by the coefficients
-    of the line A, B, C. It can be converted to cartesian line (Ax + By + C = 0) where x=x/w, y=y/w.
+    The class to represent a 2D line. By default, Line2D is a homogenous line
+    (ax + by + c = 0). A Line2D can be instantiated with two homogenous points
+    with form (x, y, w), or by the coefficients of the line a, b, c. See page 30.
     """
 
     def __init__(self, points: Optional[tuple[Point2D, Point2D]] = None,
                  coeffs: Optional[tuple[float, float, float]] = None) -> None:
         """
-        Either need two points to define the line or all three coefficients.
         """
-        assert points is not None or coeffs is not None
-        if points is not None:
-            self._p1, self._p2 = points
-            self._a, self._b, self._c = None, None, None
-        else:
+        if points is None:
             self._p1, self._p2 = None, None
             self._a, self._b, self._c = coeffs[0], coeffs[1], coeffs[2]
+        else:
+            self._p1, self._p2 = points
+            coeffs = np.cross(self._p1.vector, self._p2.vector, axis=0)
+            self._a, self._b, self._c = coeffs[0][0], coeffs[1][0], coeffs[2][0]
 
     def __repr__(self) -> str:
         """
+        Use the vector of coefficients to represent the line.
+        
+        Returns:
+            Use coefficients to represent vector.
+        """
+        return f"Line2D({self.vector})"
+
+    @property
+    def vector(self) -> np.ndarray:
+        """
+        Use the coefficients (a, b, c) to represent the line vector.
+        In the book, all vectors are column vectors that post-multiply
+        matrices unless specified.
 
         Returns:
-            For cartesian line use Ax + By + c = 0. For homogenous,
-            just use coefficients to represent vector.
+            The (3, 1) shape column vector
         """
-        if not self.is_homogenous:
-            return f"Line2D({self._a}x + {self._b}y + {self._c} = 0)"
-        else:
-            return f"Line2D({self.vector})"
+        return np.vstack([self._a, self._b, self._c])
 
     @property
     def p1(self) -> Optional[Point2D]:
         """
-
+        One of two points used to define the line
+        
         Returns:
-            Point in the line
+            A point
         """
         return self._p1
 
     @property
     def p2(self) -> Optional[Point2D]:
         """
-
+        One of two points used to define the line
+        
         Returns:
-            Point in the line
+            A point
         """
         return self._p2
 
     @property
-    def is_homogenous(self) -> bool:
+    def a(self) -> float:
         """
-        The line is considered homogeneous if the points comprising
-        it are homogenous. * May need to change.
+        Component of normal vector to line
         
         Returns:
-            True if the line is homogeneous
-        """
-        if self._p1 is not None and self._p2 is not None:
-            return self._p1.is_homogenous and self._p2.is_homogenous
-        else:
-            return True
-
-    @property
-    def a(self) -> Optional[float]:
-        """
-        Float when coefficients were used to instantiate
-        Line2D. None when Point2D was used instead.
-        
-        Returns:
-            Coefficient of homogenous line or None
+            Coefficient or None
         """
         return self._a
 
     @property
-    def b(self) -> Optional[float]:
+    def b(self) -> float:
         """
-        Float when coefficients were used to instantiate
-        Line2D. None when Point2D was used instead.
+        Component of normal vector to line
         
         Returns:
-            Coefficient of homogenous line or None
+            Coefficient or None
         """
         return self._b
         
     @property
-    def c(self) -> Optional[float]:
+    def c(self) -> float:
         """
-        Float when coefficients were used to instantiate
-        Line2D. None when Point2D was used instead.
+        Related to offset
         
         Returns:
-            Coefficient of homogenous line or None
+            Coefficient or None
         """
         return self._c
 
-    def to_homogenous(self, w1: float = 1.0, w2: float = 1.0) -> None:
-        """
-        This will convert the line to homogenous from
-        cartesian / inhomogenous by converting all points
-        comprising the line to homogenous. * May need to change.
-
-        Args:
-            w1: w for point 1
-            w2: w for point 2
-        """
-        assert not self.is_homogenous
-        self._p1.to_homogenous(w=w)
-        self._p2.to_homogenous(w=w)
-
-    def from_homogenous(self) -> None:
-        """
-        This will convert the line from homogenous to
-        cartesian / inhomogenous by converting all points
-        comprising the line to cartesian / inhomogenous.
-        * May need to change.
-        """
-        assert self.is_homogenous
-        self._p1.from_homogenous()
-        self._p2.from_homogenous()
-
     @property
-    def vector(self) -> np.ndarray:
+    def polar_coords(self) -> np.ndarray:
         """
-        Get the cross product of the two points which is the
-        line vector. In the book, all vectors are column vectors
-        that post-multiply matrices unless specified.
+        Combination of theta (the angle of the normal
+        vector to x-axis) and distance (signed distance from origin)
+        is known as the polar coordinates.
 
         Returns:
-            The 3 element vector
+            Polar coordinates as column vector
         """
-        if self._p1 is not None and self._p2 is not None:
-            pv1 = self._p1.vector
-            pv2 = self._p2.vector
-            vec = np.cross(pv1, pv2, axis=0)
-        else:
-            assert self._a is not None and self._b is not None and self._c is not None
-            vec = np.vstack([self._a, self._b, self._c])
-        return vec
+        return np.vstack([self.theta, self.distance])
+
+    @property
+    def normalized_line_vector(self) -> np.ndarray:
+        """
+        Normalized line vector in which the unit normal vector
+        perpendicular to the line vector is augmented with the
+        distance of the line to the origin.
+
+        Returns:
+            (n hat bold, d) in book page 30
+        """
+        return np.vstack([self.nx, self.ny, self.distance])
+
+    @property
+    def normalized_normal_vector(self) -> np.ndarray:
+        """
+        Normalized normal vector (unit normal vector) that has magnitude of 1.
+        Can also be expressed as (nx, ny) as shown on page 30 of book.
+
+        Returns:
+            Column vector with cos(theta), sin(theta)
+        """
+        return np.vstack([math.cos(self.theta), math.sin(self.theta)])
+
+    @property
+    def nx(self) -> float:
+        """
+        Divide by magnitude of the normal vector (a, b).
+        
+        Returns:
+            The x-component of normalized normal vector.
+        """
+        return self._a * (1 / self.magnitude)
+
+    @property
+    def ny(self) -> float:
+        """
+        Divide by magnitude of the normal vector (a, b).
+
+        Returns:
+            The y-component of normalized normal vector.
+        """
+        return self._b * (1 / self.magnitude)
+
+    @property
+    def distance(self) -> float:
+        """
+        The signed distance of the line to origin along its
+        normal direction. Divide by the magnitude of the normal
+        vector (a, b).
+
+        Returns:
+            The distance.
+        """
+        return self._c * (1 / self.magnitude)
+
+    @property
+    def magnitude(self) -> float:
+        """
+        The length of the normal vector (a, b).
+        This is needed to normalize the line vector
+        to the unit normal vector.
+        
+        Returns:
+            The magnitude
+        """
+        return math.sqrt(self._a ** 2 + self._b ** 2)
+
+    @property
+    def theta(self) -> float:
+        """
+        The angle (in radians) between normal
+        vector (a, b) and the x-axis.
+        
+        Returns:
+            The angle
+        """
+        return math.atan2(self._b, self._a)
 
     def intersection_with(self, other: "Line2D") -> Point2D:
         """
@@ -155,7 +195,7 @@ class Line2D:
             The intersection point
         """
         intersec = np.cross(self.vector, other.vector, axis=0)
-        return Point2D(x=intersec[0], y=intersec[1], w=intersec[2])
+        return Point2D(intersec[0], intersec[1], intersec[2])
 
     def contains_point(self, point: Point2D) -> bool:
         """
@@ -171,27 +211,49 @@ class Line2D:
 
     def get_point_y_from_x(self, x: Union[float, list[float]]) -> Union[float, list[float]]:
         """
-        Get the y coordinate on line given x coordinate
+        Get the y coordinate on line given x coordinate / coordinates
 
         Args:
-            x: The x coordinate
+            x: The x coordinate / coordinates
 
         Returns:
             The corresponding y coordinate on the line
         """
-        y = (-self._a * x - self._c) / self._b
+        if isinstance(x, float):
+            y = (-self._a * x - self._c) / self._b
+        else:
+            y = [(-self._a * _x - self._c) / self._b for _x in x]
         return y
 
     def get_point_x_from_y(self, y: Union[float, list[float]]) -> Union[float, list[float]]:
         """
-        Get the x coordinate on line given y coordinate
+        Get the x coordinate on line given y coordinate / coordinates
 
         Args:
-            y: The y coordinate
+            y: The y coordinate / coordinates
 
         Returns:
             The corresponding x coordinate on the line
         """
-        x = (-self._b * y - self._c) / self._a
+        if isinstance(y, float):
+            x = (-self._b * y - self._c) / self._a
+        else:
+            x = [(-self._b * _y - self._c) / self._a for _y in y]
         return x
+
+    def __eq__(self, other: "Line2D") -> bool:
+        """
+        Lines are equal if they have the same coefficients.
+
+        Args:
+            other: The other line
+
+        Returns:
+            True if equal
+        """
+        return self._a == other.a and self._b == other.b and self._c == other.c
+
+
+if __name__ == "__main__":
+    pass
         

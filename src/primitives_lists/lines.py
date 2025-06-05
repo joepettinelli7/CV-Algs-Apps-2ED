@@ -15,8 +15,6 @@ class Lines2D:
             self._lines: list[Line2D] = lines
         else:
             self._lines: list[Line2D] = []
-        # Sum of outer products of each line vector with itself
-        self._A: Optional[np.ndarray] = None
 
     @property
     def lines(self) -> list[Line2D]:
@@ -27,18 +25,6 @@ class Lines2D:
             The list of lines
         """
         return self._lines
-
-    @property
-    def A(self) -> Optional[np.ndarray]:
-        """
-        Get A
-
-        Returns:
-            A will be valid if it has been calculated already.
-        """
-        if self._A is None:
-            print("A has not been calculated yet. Call calculate_A().")
-        return self._A
 
     def calculate_closest_point(self, verbose: bool = False) -> Optional[Point2D]:
         """
@@ -70,7 +56,6 @@ class Lines2D:
     def calculate_A(self, verbose: bool = False) -> np.ndarray:
         """
         Sum of outer products of each line vector with itself.
-        # TODO do not need to update from scratch more than once?
 
         Returns:
             The 3x3 matrix
@@ -85,11 +70,26 @@ class Lines2D:
     def append(self, new_line: Line2D) -> None:
         """
         Append line to line list
-        # TODO update A when new line is added?
 
         Args:
             new_line: The new line to append
         """
         assert isinstance(new_line, Line2D)
         self._lines.append(new_line)
-        
+
+    def __getitem__(self, idx: int) -> Line2D:
+        """
+        Get the line from lines
+
+        Args:
+            idx: The index
+
+        Returns:
+            The line at index
+        """
+        return self._lines[idx]
+
+
+if __name__ == "__main__":
+    pass
+    

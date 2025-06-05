@@ -6,8 +6,8 @@ from src.primitives.line import Line2D
 
 class Points2D:
     """
-    A class that holds multiple Point2D objects in instance variable
-    and performs calculations on those points.
+    A class that holds multiple Point2D objects and performs
+    calculations on those points in their cartesian space.
     """
 
     def __init__(self, points: Optional[list[Point2D]]) -> None:
@@ -19,7 +19,7 @@ class Points2D:
     @property
     def points(self) -> list[Point2D]:
         """
-        All points belonging to instance
+        All points belonging to instance.
         
         Returns:
             The list of points
@@ -27,28 +27,55 @@ class Points2D:
         return self._points
 
     @property
-    def array_form(self) -> np.ndarray:
+    def num_points(self) -> int:
         """
-        Make an array to represent all points to be used
-        with numpy for calculations.
+        Number of points belonging to instance
         
         Returns:
-            Nx2 array because cartesian points currently.
+            Number of points
         """
-        arr = np.empty((len(self._points), 2))             
-        for idx, p in enumerate(self._points):
-            arr[idx] = p.vector.T
-        return arr
+        return len(self._points)
 
+    @property
+    def array_form(self) -> Optional[np.ndarray]:
+        """
+        Make an array with each row being a point. This
+        makes calculations easier with numpy.
+        
+        Returns:
+            nx3 array because (x, y, w) for each point.
+        """
+        if self.num_points > 0:
+            arr = np.empty((self.num_points, 3))           
+            for idx, p in enumerate(self._points):
+                arr[idx] = p.vector.T
+            return arr
+        else:
+            return None
+    
+    @property
+    def centroid(self) -> Optional[np.ndarray]:
+        """
+        Centroid of points in cartesian space with w equal to 1.
+        Numpy array makes calculations easier than using Point2D.
+
+        Returns:
+            Centroid
+        """
+        if self.num_points > 0:
+            return np.mean(self.array_form, axis=0)
+        else:
+            return None
+    
     def append(self, new_point: Point2D) -> None:
         """
-        Append point to point list
+        Append point to points list
 
         Args:
             new_point: The new point to append
         """
         assert isinstance(new_point, Point2D)
-        self._point.append(new_poiont)
+        self._points.append(new_point)
 
     def calculate_fit_line(self, verbose: bool = False) -> Line2D:
         """
@@ -60,17 +87,18 @@ class Points2D:
         Returns:
             The best line
         """
-        centroid: np.ndarray = np.mean(self.array_form, axis=0)
-        centered_points: np.ndarray = self.array_form - centroid
-        cov_mat: np.ndarray = np.cov(centered_points.T, bias=True)
-        # cov_mat: np.ndarray = self.calculate_covariance_matrix(verbose=verbose)
+        cov_mat: np.ndarray = self.calculate_covariance_matrix(verbose=verbose)
+        # Get all eigenvalues and eigenvectors
         eigvals, eigvecs = np.linalg.eig(cov_mat)
+        # Get largest eigenvector
         max_eigval_idx = np.argmax(eigvals)
         principal_direction = eigvecs[:, max_eigval_idx]
-        dx, dy = principal_direction
-        normal_vector = np.array([-dy, dx])  # rotate to be orthogonal
-        a, b = normal_vector  # Get point on line (centroid)
-        c = -a * centroid[0] - b * centroid[1]
+        dx, dy, _ = principal_direction
+        # Get the orthogonal vector
+        normal_vector = np.array([-dy, dx])
+        # Get point on line (centroid)
+        a, b = normal_vector
+        c = -a * self.centroid[0] - b * self.centroid[1]
         fit_line = Line2D(coeffs=(float(a), float(b), float(c)))
         if verbose:
             print(f"eigvals: {eigvals}\n")
@@ -87,51 +115,71 @@ class Points2D:
         Calculate the covariance matrix of all points.
 
         Args:
-            verbose: Whether to print the values
+            verbose: Whether to print the values.
 
         Returns:
-            A 2x2 matrix
+            A 3x3 matrix
         """
-        centroid: np.ndarray = self.calculate_centroid(verbose=verbose)
-        centered_points: np.ndarray = self.array_form - centroid
-        cov_mat: np.ndarray = np.cov(centered_points.T, bias=True)
+        centered_points: np.ndarray = self.array_form - self.centroid
+        cov_mat = np.cov(centered_points.T, bias=True)
         if verbose:
+            print(f"centroid: {self.centroid}\n")
             print(f"centered_points: {centered_points}\n")
             print(f"cov_mat: {cov_mat}\n")
         return cov_mat
 
-    def calculate_centroid(self, verbose: bool = False) -> np.ndarray:
+    def __sub__(self, other: Point2D) -> Optional["Points2D"]:
         """
-        Calculate the centroid of all points
-
-        Args:
-            verbose: Whether to print the values
-
-        Returns:
-            The centroid / mean of all points as cartesian
-        """
-        # mean of each column [x mean, y mean].
-        centroid: np.ndarray = np.mean(self.array_form, axis=0)
-        if verbose:
-            print(f"centroid: {centroid}\n")
-        return centroid
-
-    def __sub__(self, other: Point2D) -> "Points2D":
-        """
-        Subtract other point from list of points.
+        Subtract other point from list of points. This will
+        result in list of vectors with w equal to 0.
 
         Args:
             other: The other point to subtract
 
         Returns:
-            The list of points with other subtracted
+            A new object with other subtracted
         """
         if isinstance(other, Point2D):
-            assert not other.is_homogenous
+            p_diffs = []
             for p in self._points:
-                assert not p.is_homogenous
-                p = p - other
+                p_diff = p - other
+                p_diffs.append(p_diff)
+            return Points2D(p_diffs)
+        else:
+            raise TypeError(f"Cannot subtract {other.__class__} object from Point2D object.")
+
+    def __isub__(self, other: Point2D) -> Optional["Points2D"]:
+        """
+        In-place subtract other point from list of points. This will
+        result in the instance containing a list of vectors with
+        w equal to 0.
+
+        Args:
+            other: The other point to subtract
+
+        Returns:
+            The same object with other subtracted
+        """
+        if isinstance(other, Point2D):
+            for p in self._points:
+                p -= other
             return self
         else:
             raise TypeError(f"Cannot subtract {other.__class__} object from Point2D object.")
-        
+
+    def __getitem__(self, idx: int) -> Point2D:
+        """
+        Get the point from points
+
+        Args:
+            idx: The index
+
+        Returns:
+            The point at index
+        """
+        return self._points[idx]
+
+
+if __name__ == "__main__":
+    pass
+    
