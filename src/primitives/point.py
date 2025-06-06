@@ -289,6 +289,16 @@ class Point2D:
         new_x = self._x / other
         new_y = self._y / other
         return Point2D(new_x, new_y, self._w)
+
+    def copy(self) -> "Point2D":
+        """
+        Make a copy of point with equal x, y, w.
+
+        Returns:
+            New point object.
+        """
+        x, y, w = self._x, self._y, self._w
+        return Point2D(x, y, w)
         
 
 if __name__ == "__main__":

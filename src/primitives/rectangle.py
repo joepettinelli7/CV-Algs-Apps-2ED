@@ -21,6 +21,15 @@ class Rectangle2D:
         # Rectangle may not be parallel with canvas, so use distance calculation.
         self._width: float = math.dist((left_top.x, left_top.y), (right_top.x, right_top.y))
         self._height: float = math.dist((left_top.x, left_top.y), (left_bottom.x, left_bottom.y))
+
+    def __repr__(self) -> str:
+        """
+        Use the corner points to represent the rectangle.
+        
+        Returns:
+            The corners
+        """
+        return f"Rectangle2D({self.corners})"
     
     @property
     def left_top(self) -> Point2D:
@@ -171,6 +180,19 @@ class Rectangle2D:
             self._left_bottom = corner_point
         else:
             raise IndexError(f"Corner index must be 0-3, not {corner_index}.")
+
+    def copy(self) -> "Rectangle2D":
+        """
+        Make a copy of rectangle with equal points.
+
+        Returns:
+            New rectangle object.
+        """
+        left_top = self._left_top.copy()
+        right_top = self._right_top.copy()
+        right_bottom = self._right_bottom.copy()
+        left_bottom = self._left_bottom.copy()
+        return Rectangle2D(left_top, right_top, right_bottom, left_bottom)
         
 
 if __name__ == "__main__":

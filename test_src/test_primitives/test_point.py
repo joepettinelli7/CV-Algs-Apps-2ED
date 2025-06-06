@@ -107,6 +107,16 @@ class TestPoint2D:
         assert p1.x == expected.x
         assert p1.y == expected.y
         assert p1.w == expected.w
+
+    def test_copy(self) -> None:
+        """
+        """
+        p1 = Point2D(1.0, 2.0, 1.0)
+        p1_copy = p1.copy()
+        new_x = 5.0
+        assert p1.x != new_x
+        p1.x = new_x
+        assert p1_copy.x != new_x
         
 
 if __name__ == "__main__":

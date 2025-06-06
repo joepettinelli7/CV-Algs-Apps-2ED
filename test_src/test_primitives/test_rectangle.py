@@ -60,6 +60,17 @@ class TestRectangle2D:
         with pytest.raises(IndexError):
             rect[4] = p4
 
+    def test_copy(self, points_fix: tuple[Point2D]) -> None:
+        """
+        """
+        p1, p2, p3, p4 = points_fix
+        rect = Rectangle2D(p1, p2, p3, p4)
+        rect_copy = rect.copy()
+        new_point = Point2D(0.5, 0.5, 1.0)
+        assert rect.left_top != new_point
+        rect.left_top = new_point
+        assert rect_copy.left_top != new_point
+
 
 if __name__ == "__main__":
     pass

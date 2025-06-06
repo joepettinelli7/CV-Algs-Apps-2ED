@@ -76,6 +76,7 @@ class CanvasHandler:
         self._rect_end_p.y = y
         rect_w = x - self._rect_start_p.x
         rect_h = y - self._rect_start_p.y
+        self._canvas.stroke_style = "black"
         self._canvas.stroke_rect(self._rect_start_p.x, self._rect_start_p.y, rect_w, rect_h)
 
     def handle_button_click(self, b) -> None:
@@ -87,7 +88,8 @@ class CanvasHandler:
         """
         selected_transform = self._transforms[b.description]
         print(selected_transform)
-        new_rect = selected_transform.apply_to_rectangle(self.user_rectangle)
+        new_rect = self.user_rectangle.copy()  # Make copy so original rectangle is used
+        new_rect = selected_transform.apply_to_rectangle(new_rect)
         self.draw_rectangle_with_points(new_rect)
 
     def draw_rectangle_with_points(self, rect: Rectangle2D) -> None:
@@ -116,6 +118,7 @@ class CanvasHandler:
         """
         Define a rectangle using 4 corner points.
         User rectangle with always be parallel with canvas.
+        This is read only.
 
         Returns:
             Custom rectangle object
