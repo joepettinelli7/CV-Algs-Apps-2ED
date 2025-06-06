@@ -9,69 +9,61 @@ class ShearTransform2D(TransformBase2D):
     Preserves: parallelism, straight lines.
     """
 
-    def __init__(self, theta: float = 0., from_origin: bool = False) -> None:
+    def __init__(self, theta: float = 0.) -> None:
         """
-        By default, will shear from object center. If from_origin is True,
-        then object will appear to shear and translate.
-
-        Args:
-            theta: Radians
+        Theta is angle to shear lines and should be in radians.
         """
         super().__init__()
-        self._shear_val = np.tan(theta)
-        self._from_origin = from_origin
+        self._theta = theta
         self._M[0][1] = np.tan(theta)
         self._DoF = 1
 
     @property
-    def shear_val(self) -> None:
+    def theta(self) -> float:
         """
-        """
-        return self._shear_val
+        Angle to shear lines in radians.
 
-    @shear_val.setter
-    def shear_val(self, new_shear_val: float) -> None:
+        Returns:
+            Theta
         """
-        """
-        self._shear_val = new_shear_val
+        return self._theta
 
-    @property
-    def from_origin(self) -> bool:
+    @theta.setter
+    def theta(self, new_theta: float) -> None:
         """
-        """
-        return self._from_origin
+        Set the new theta value.
 
-    @from_origin.setter
-    def from_origin(self, new_from_origin: bool) -> None:
+        Args:
+            new_shear_factor: New theta in radians.
         """
-        """
-        self._from_origin = new_from_origin
+        self._theta = new_theta
 
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """
-        Apply shear to the rectangle corners
+        Apply shear to the rectangle corners.
 
         Args:
             rect: Rectangle object
 
         Returns:
-            The sheared corner points
+            The rectangle with sheared corner points.
         """
-        if not self._from_origin:
-            # Update matrix
+        if not super().from_origin:
             center = rect.center
-            translation_to_orig = TranslationTransform2D(tx=-center.x, ty=-center.y)
-            translation_to_center = TranslationTransform2D(tx=center.x, ty=center.y)
+            to_origin = TranslationTransform2D(-center.x, -center.y)
+            to_center = TranslationTransform2D(center.x, center.y)
             # Shift to origin, shear, shift back to object center
-            self._M = translation_to_center.M @ self._M @ translation_to_orig.M
-        rect = super().apply_to_rectangle(rect=rect)
+            self._M = to_center.M @ self._M @ to_origin.M
+        rect = super().apply_to_rectangle(rect)
+        self.reset()  # Need to reset with instance variables
         return rect
 
-    def update_M(self) -> None:
+    def reset(self) -> None:
         """
-        Update M with current shear scalar
+        Reset M with instance variables.
         """
-        self._M[0][1] = self._shear_val
+        super().reset()
+        self._M[0][1] = np.tan(self._theta)
 
 
 if __name__ == "__main__":

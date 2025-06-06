@@ -12,70 +12,101 @@ class RigidTransform2D(TransformBase2D):
     Preserves: lengths, angles, parallelism, straight lines.
     """
 
-    def __init__(self, theta: float = 0., tx: int = 0., ty: int = 0., from_origin: bool = False) -> None:
+    def __init__(self, theta: float = 0., tx: int = 0, ty: int = 0) -> None:
         """
         """
         super().__init__()
-        self._rotation: RotationTransform2D = RotationTransform2D(theta=theta, from_origin=from_origin)
-        self._translation: TranslationTransform2D = TranslationTransform2D(tx=tx, ty=ty)
-        self._M: np.ndarray = np.dot(self._rotation.M, self._translation.M)  # rotation then translation
+        self._rotation = RotationTransform2D(theta)
+        self._translation = TranslationTransform2D(tx, ty)
+        self._M: np.ndarray = self._translation.M @ self._rotation.M  # rotate then translate
         self._DoF: int = 3
 
     @property
     def theta(self) -> float:
         """
-        Get theta from the RotationTransform2D class
-        
+        Get theta from the RotationTransform2D instance.
+
+        Returns:
+            Theta
         """
         return self._rotation.theta
 
     @theta.setter
     def theta(self, new_theta: float) -> None:
         """
-        Set theta in the RotationTransform2D class
-        
+        Set theta in the RotationTransform2D instance.
+
+        Args:
+            new_theta: New theta in radians.
         """
         self._rotation.theta = new_theta
 
     @property
-    def t_vector(self) -> np.ndarray[float, float]:
+    def tx(self) -> int:
         """
-        Get the TranslationTransform2D translation vector
-        
-        """
-        return self._translation.t_vector
+        Get translation in x direction from TranslationTransform2D instance.
 
-    @t_vector.setter
-    def t_vector(self, new_t_vector: np.ndarray) -> None:
+        Returns:
+            Translation
         """
-        Set the TranslationTransform2D translation vector
-        
-        """
-        self._translation.t_vector = new_t_vector
+        return self._translation.tx
 
-    def update_M(self) -> None:
+    @tx.setter
+    def tx(self, new_tx: int) -> None:
         """
-        Update M, but first update rotation and translation matrices.
+        Set new translation in x direction in TranslationTransform2D instance.
+
+        Args:
+            new_tx: New translation x
         """
-        self._rotation.update_M()
-        self._translation.update_M()
-        self._M = np.dot(self._rotation.M, self._translation.M)
+        self._translation.tx = new_tx
+
+    @property
+    def ty(self) -> int:
+        """
+        Get translation in y direction from TranslationTransform2D instance.
+
+        Returns:
+            Translation
+        """
+        return self._translation.ty
+
+    @ty.setter
+    def ty(self, new_ty: int) -> None:
+        """
+        Set new translation in y direction in TranslationTransform2D instance.
+
+        Args:
+            new_ty: New translation y
+        """
+        self._translation.ty = new_ty
 
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """
         Apply rigid transform (rotate then translate) to the rectangle corners.
-        Composed of rotation and translation, so utilize those methods and make
-        this implementation different.
 
         Args:
             rect: Rectangle object
 
         Returns:
-            The rigid transformed corner points
+            The rectangle with rigid transformed corner points.
         """
-        rect = self._rotation.apply_to_rectangle(rect=rect)
-        rect = self._translation.apply_to_rectangle(rect=rect)
+        if not super().from_origin:
+            center = rect.center
+            to_origin = TranslationTransform2D(-center.x, -center.y)
+            to_center = TranslationTransform2D(center.x, center.y)
+            # Shift to origin, rigid, shift back to object center
+            self._M = to_center.M @ self._M @ to_origin.M
+        rect = super().apply_to_rectangle(rect)
+        self.reset()  # Need to reset with instance variables
         return rect
+
+    def reset(self) -> None:
+        """
+        Reset M with instance variables.
+        """
+        super().reset()
+        self._M = self._translation.M @ self._rotation.M
 
 
 if __name__ == "__main__":

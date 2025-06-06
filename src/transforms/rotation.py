@@ -10,17 +10,12 @@ class RotationTransform2D(TransformBase2D):
     Preserves: lengths, angles, parallelism, straight lines.
     """
 
-    def __init__(self, theta: float = 0., from_origin: bool = False) -> None:
+    def __init__(self, theta: float = 0.) -> None:
         """
-        By default, will rotate from object center. If from_origin is True,
-        then object will appear to rotate and translate.
-
-        Args:
-            theta: Radians
+        Theta should be in radians.
         """
         super().__init__()
         self._theta = theta
-        self._from_origin = from_origin
         self._M[0][0] = math.cos(theta)
         self._M[0][1] = -math.sin(theta)
         self._M[1][0] = math.sin(theta)
@@ -30,26 +25,22 @@ class RotationTransform2D(TransformBase2D):
     @property
     def theta(self) -> float:
         """
+        The rotion angle in radians
+
+        Returns:
+            Theta
         """
         return self._theta
 
     @theta.setter
     def theta(self, new_theta: float) -> None:
         """
+        Set the rotation angle in radians
+
+        Args:
+            new_theta: New theta
         """
         self._theta = new_theta
-
-    @property
-    def from_origin(self) -> bool:
-        """
-        """
-        return self._from_origin
-
-    @from_origin.setter
-    def from_origin(self, new_from_origin: bool) -> None:
-        """
-        """
-        self._from_origin = new_from_origin
 
     def to_degrees(self, radians: float) -> float:
         """
@@ -77,28 +68,29 @@ class RotationTransform2D(TransformBase2D):
 
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """
-        Apply rotation to the rectangle corners
+        Apply rotation to the rectangle corners.
 
         Args:
             rect: Rectangle object
 
         Returns:
-            The rotated corner points
+            The rectangle with rotated corner points.
         """
-        if not self._from_origin:
-            # Update matrix
+        if not super().from_origin:
             center = rect.center
-            translation_to_orig = TranslationTransform2D(tx=-center.x, ty=-center.y)
-            translation_to_center = TranslationTransform2D(tx=center.x, ty=center.y)
+            to_origin = TranslationTransform2D(-center.x, -center.y)
+            to_center = TranslationTransform2D(center.x, center.y)
             # Shift to origin, rotate, shift back to object center
-            self._M = translation_to_center.M @ self._M @ translation_to_orig.M
-        rect = super().apply_to_rectangle(rect=rect)
+            self._M = to_center.M @ self._M @ to_origin.M
+        rect = super().apply_to_rectangle(rect)
+        self.reset()  # Need to reset with instance variables
         return rect
 
-    def update_M(self) -> None:
+    def reset(self) -> None:
         """
-        Update M with current rotation values
+        Reset M with instance variables.
         """
+        super().reset()
         self._M[0][0] = math.cos(self._theta)
         self._M[0][1] = -math.sin(self._theta)
         self._M[1][0] = math.sin(self._theta)
