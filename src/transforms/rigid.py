@@ -14,12 +14,18 @@ class RigidTransform2D(TransformBase2D):
 
     def __init__(self, theta: float = 0., tx: int = 0, ty: int = 0) -> None:
         """
+        Default is no change.
+
+        Args:
+            theta: Rotation angle in radians
+            tx: Translation x distance
+            ty: Translation y distance
         """
         super().__init__()
         self._rotation = RotationTransform2D(theta)
         self._translation = TranslationTransform2D(tx, ty)
         self._M: np.ndarray = self._translation.M @ self._rotation.M  # rotate then translate
-        self._DoF: int = 3
+        self._DoF: int = self._rotation.DoF + self._translation.DoF  # 3
 
     @property
     def theta(self) -> float:
@@ -98,7 +104,7 @@ class RigidTransform2D(TransformBase2D):
             # Shift to origin, rigid, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()  # Need to reset with instance variables
+        self.reset()
         return rect
 
     def reset(self) -> None:

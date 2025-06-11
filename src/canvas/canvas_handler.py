@@ -11,12 +11,13 @@ from src.transforms.rigid import RigidTransform2D
 from src.transforms.similarity import SimilarityTransform2D
 from src.transforms.shear import ShearTransform2D
 from src.transforms.affine import AffineTransform2D
+from src.transforms.perspective import PerspectiveTransform2D
 from src.transforms.projective import ProjectiveTransform2D
 
 
 class CanvasHandler:
 
-    def __init__(self, w: int = 800, h: int = 200) -> None:
+    def __init__(self, w: int = 850, h: int = 200) -> None:
         """
         """
         # Initialize empty canvas
@@ -88,7 +89,8 @@ class CanvasHandler:
         """
         selected_transform = self._transforms[b.description]
         print(selected_transform)
-        new_rect = self.user_rectangle.copy()  # Make copy so original rectangle is used
+        # Make copy so original rectangle is used next time
+        new_rect = self.user_rectangle.copy()
         new_rect = selected_transform.apply_to_rectangle(new_rect)
         self.draw_rectangle_with_points(new_rect)
 

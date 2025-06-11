@@ -11,7 +11,10 @@ class ShearTransform2D(TransformBase2D):
 
     def __init__(self, theta: float = 0.) -> None:
         """
-        Theta is angle to shear lines and should be in radians.
+        Default is no shear.
+
+        Args:
+            Theta: Angle to shear lines in radians.
         """
         super().__init__()
         self._theta = theta
@@ -55,7 +58,7 @@ class ShearTransform2D(TransformBase2D):
             # Shift to origin, shear, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()  # Need to reset with instance variables
+        self.reset()
         return rect
 
     def reset(self) -> None:

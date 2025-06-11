@@ -12,13 +12,21 @@ class ScaleTransform2D(TransformBase2D):
 
     def __init__(self, sx: float = 1., sy: float = 1.) -> None:
         """
+        Default is no scaling.
+
+        Args:
+            sx: Scale in x direction
+            sy: Scale in y direction
         """
         super().__init__()
         self._sx = sx
         self._sy = sy
         self._M[0][0] = sx
         self._M[1][1] = sy
-        self._DoF = 1
+        if sx == sy:
+            self._DoF = 1  # uniform
+        else:
+            self._DoF = 2  # non-uniform
 
     @property
     def sx(self) -> float:
@@ -77,7 +85,7 @@ class ScaleTransform2D(TransformBase2D):
             # Shift to origin, scale, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()  # Need to reset with instance variables
+        self.reset()
         return rect
 
     def reset(self) -> None:

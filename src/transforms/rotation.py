@@ -12,7 +12,10 @@ class RotationTransform2D(TransformBase2D):
 
     def __init__(self, theta: float = 0.) -> None:
         """
-        Theta should be in radians.
+        Default is no rotation.
+
+        Args:
+            Theta: Rotation angle in radians
         """
         super().__init__()
         self._theta = theta
@@ -42,30 +45,6 @@ class RotationTransform2D(TransformBase2D):
         """
         self._theta = new_theta
 
-    def to_degrees(self, radians: float) -> float:
-        """
-        Convert radians to degrees
-
-        Args:
-            radians: Radians
-
-        Returns:
-            Degrees
-        """
-        return radians * (180 / math.pi)
-
-    def to_radians(self, degrees: float) -> float:
-        """
-        Convert degrees to radians
-
-        Args:
-            degrees: Degrees
-
-        Returns:
-            Radians
-        """
-        return degrees * (math.pi / 180)
-
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """
         Apply rotation to the rectangle corners.
@@ -83,7 +62,7 @@ class RotationTransform2D(TransformBase2D):
             # Shift to origin, rotate, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()  # Need to reset with instance variables
+        self.reset()
         return rect
 
     def reset(self) -> None:

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 import numpy as np
 from src.primitives.point import Point2D
 from src.primitives.rectangle import Rectangle2D
@@ -7,8 +7,12 @@ from src.primitives.rectangle import Rectangle2D
 class TransformBase2D:
     """
     Base class for all other transforms. Currently implemented
-    for 2D and homogenous coordinates.
+    for 2D homogenous coordinates. In subclasses of this class,
+    use the names from all_components when naming instance variables.
     """
+    
+    all_components = ["_translation", "_rotation", "_scale", "_shear",
+                      "_perspective", "_rigid", "_similarity", "_affine"]
 
     def __init__(self) -> None:
         """
@@ -28,9 +32,14 @@ class TransformBase2D:
         Use the matrix to represent transform.
         
         Returns:
-            The transform name and the matrix.
+            The transform name and the matrix along with
+            the transforms that compose the transform.
         """
-        return f"{self.__class__.__name__}: {self._M}\n"
+        rep = f"{self.__class__.__name__}: {self._M}\n"
+        components = self.get_components()
+        if len(components) > 0:
+            rep += f" composed of {components}\n"
+        return rep
 
     @property
     def M(self) -> np.ndarray:
@@ -140,7 +149,46 @@ class TransformBase2D:
         the instance was initialized with.
         """
         self._M = np.identity(3, dtype=float)
-        
+    
+    def get_components(self) -> List["TransformBase2D"]:
+        """
+        Get the transforms (subclasses of TransformBase2D) that
+        compose the transform. For example, rigid is composed
+        of rotation + translation.
 
+        Returns:
+            The transform component transforms.
+        """
+        instance_vars = vars(self)
+        components = [value for key, value in instance_vars.items() if key in self.all_components]
+        return components
+
+    def to_degrees(self, radians: float) -> float:
+        """
+        Convert radians to degrees. Needed for rotation
+        and shear transformations which both have a theta parameter.
+
+        Args:
+            radians: Radians
+
+        Returns:
+            Degrees
+        """
+        return radians * (180 / math.pi)
+
+    def to_radians(self, degrees: float) -> float:
+        """
+        Convert degrees to radians. Needed for rotation
+        and shear transformations which both have a theta parameter.
+
+        Args:
+            degrees: Degrees
+
+        Returns:
+            Radians
+        """
+        return degrees * (math.pi / 180)
+        
+    
 if __name__ == "__main__":
     pass

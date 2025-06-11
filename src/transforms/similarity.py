@@ -15,13 +15,21 @@ class SimilarityTransform2D(TransformBase2D):
 
     def __init__(self, sx: float = 1., sy: float = 1., theta: float = 0., tx: int = 0, ty: int = 0) -> None:
         """
+        Default is no change.
+
+        Args:
+            sx: Scale in x direction
+            sy: Scale in y direction
+            theta: Rotation angle in radians
+            tx: Translation x distance
+            ty: Translation y distance
         """
         super().__init__()
         assert sx == sy  # uniform scaling
         self._scale = ScaleTransform2D(sx, sy)
         self._rigid = RigidTransform2D(theta, tx, ty)
-        self._M: np.ndarray = self._rigid.M @ self._scale.M  # scale then rigid
-        self._DoF: int = 4
+        self._M: np.ndarray = self._rigid.M @ self._scale.M   # scale then rigid
+        self._DoF: int = self._scale.DoF + self._rigid.DoF  # 4
 
     @property
     def sx(self) -> float:
@@ -140,7 +148,7 @@ class SimilarityTransform2D(TransformBase2D):
             # Shift to origin, similarity, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()  # Need to reset with instance variables
+        self.reset()
         return rect
 
     def reset(self) -> None:
@@ -148,7 +156,7 @@ class SimilarityTransform2D(TransformBase2D):
         Reset M with instance variables.
         """
         super().reset()
-        self._M = self._rigid.M @ self._scale.M
+        self._M = self._rigid.M @ self._scale.M 
 
 
 if __name__ == "__main__":

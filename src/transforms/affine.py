@@ -12,26 +12,28 @@ class AffineTransform2D(TransformBase2D):
     """
     Composed of rigid + non-uniform scale + shear transforms (Cannot
     use similarity transform because it does not allow non-uniform scale).
-    Preserves: parallelism, straight lines
+    Preserves: parallelism, straight lines.
     """
 
     def __init__(self, sx: float = 1., sy: float = 1., shear_theta: float = 0.,
                  theta: float = 0., tx: int = 0, ty: int = 0) -> None:
         """
+        Default is no change.
+        
         Args:
             sx: Scale x
             sy: Scale y
-            shear_theta: Shear theta
-            theta: Rotation theta
-            tx: Translate x
-            ty: Translate y
+            shear_theta: Shear angle in radians
+            theta: Rotation angle in radians
+            tx: Translation x distance
+            ty: Translation y distance
         """
         super().__init__()
-        self._shear = ShearTransform2D(shear_theta)
         self._scale = ScaleTransform2D(sx, sy)
+        self._shear = ShearTransform2D(shear_theta)
         self._rigid = RigidTransform2D(theta, tx, ty)
         self._M: np.ndarray = self._rigid.M @ self._shear.M @ self._scale.M  # scale, shear, rigid
-        self._DoF: int = 6
+        self._DoF: int = self._scale.DoF + self._shear.DoF + self._rigid.DoF  # 6
 
     @property
     def sx(self) -> float:
@@ -121,7 +123,7 @@ class AffineTransform2D(TransformBase2D):
         Returns:
             Translation distance
         """
-        return self._tx
+        return self._rigid.tx
 
     @tx.setter
     def tx(self, new_tx: int) -> None:
@@ -131,7 +133,7 @@ class AffineTransform2D(TransformBase2D):
         Args:
             new_tx: New translation distance
         """
-        self._tx = new_tx
+        self._rigid.tx = new_tx
 
     @property
     def ty(self) -> int:
@@ -141,7 +143,7 @@ class AffineTransform2D(TransformBase2D):
         Returns:
             Translation distance
         """
-        return self._ty
+        return self._rigid.ty
 
     @ty.setter
     def ty(self, new_ty: int) -> None:
@@ -151,7 +153,7 @@ class AffineTransform2D(TransformBase2D):
         Args:
             new_ty: New translation distance
         """
-        self._ty = new_ty
+        self._rigid.ty = new_ty
 
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """
@@ -170,7 +172,7 @@ class AffineTransform2D(TransformBase2D):
             # Shift to origin, affine, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()  # Need to reset with instance variables
+        self.reset()
         return rect
 
     def reset(self) -> None:

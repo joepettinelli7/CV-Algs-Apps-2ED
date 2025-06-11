@@ -13,8 +13,8 @@ class TranslationTransform2D(TransformBase2D):
         Default is no translation.
 
         Args:
-            tx: x translation
-            ty: y translation
+            tx: x translation distance
+            ty: y translation distance
         """
         super().__init__()
         self._tx = tx
@@ -77,7 +77,7 @@ class TranslationTransform2D(TransformBase2D):
 
     def update_M(self) -> None:
         """
-        Update M with current tx and ty values
+        Update M with current instance variables.
         """
         self._M[0][2] = self._tx
         self._M[1][2] = self._ty
