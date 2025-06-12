@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Optional, Tuple
+import math
 import numpy as np
 from src.primitives.rectangle import Rectangle2D
 from src.transforms.transform_base import TransformBase2D
@@ -32,6 +33,26 @@ class SimilarityTransform2D(TransformBase2D):
         self._DoF: int = self._scale.DoF + self._rigid.DoF  # 4
 
     @property
+    def scale(self) -> ScaleTransform2D:
+        """
+        Get the scale transform
+
+        Returns:
+            The scale transform
+        """
+        return self._scale
+
+    @property
+    def rigid(self) -> RigidTransform2D:
+        """
+        Get the rigid transform
+
+        Returns:
+            The rigid transform
+        """
+        return self._rigid
+
+    @property
     def sx(self) -> float:
         """
         Get the scale x value from ScaleTransform2D instance.
@@ -50,6 +71,7 @@ class SimilarityTransform2D(TransformBase2D):
             new_scale_x: New scale factor
         """
         self._scale.sx = new_scale_x
+        self.update_M()
 
     @property
     def sy(self) -> float:
@@ -70,6 +92,7 @@ class SimilarityTransform2D(TransformBase2D):
             new_scale_y: New scale factor
         """
         self._scale.sy = new_scale_y
+        self.update_M()
 
     @property
     def theta(self) -> float:
@@ -90,6 +113,7 @@ class SimilarityTransform2D(TransformBase2D):
             theta: New theta in radians.
         """
         self._rigid.theta = new_theta
+        self.update_M()
 
     @property
     def tx(self) -> int:
@@ -110,6 +134,7 @@ class SimilarityTransform2D(TransformBase2D):
             new_tx: New translation distance
         """
         self._tx = new_tx
+        self.update_M()
 
     @property
     def ty(self) -> int:
@@ -130,6 +155,7 @@ class SimilarityTransform2D(TransformBase2D):
             new_ty: New translation distance
         """
         self._ty = new_ty
+        self.update_M()
 
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """
@@ -148,15 +174,31 @@ class SimilarityTransform2D(TransformBase2D):
             # Shift to origin, similarity, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()
+        self.update_M()
         return rect
 
-    def reset(self) -> None:
+    def update_M(self) -> None:
         """
-        Reset M with instance variables.
+        Update M with instance variables.
         """
         super().reset()
-        self._M = self._rigid.M @ self._scale.M 
+        self._M = self._rigid.M @ self._scale.M
+
+    def get_decomposed(self) -> Tuple[ScaleTransform2D, RigidTransform2D]:
+        """
+        Decompose the matrix M into it's component scale and rigid matrices.
+        Do this as if component matrices are unknown. Do not change M.
+
+        Returns:
+            (scale transform, rigid transform)
+        """
+        s = math.sqrt(self._M[0][0]**2 + self._M[1][0]**2)
+        scale = ScaleTransform2D(s, s)
+        rotation_m = self._M[:2, :2] / s
+        theta = math.atan2(rotation_m[1][0], rotation_m[0][0])
+        tx, ty = self._M[0][2], self._M[1][2]
+        rigid = RigidTransform2D(theta, tx, ty)
+        return scale, rigid
 
 
 if __name__ == "__main__":

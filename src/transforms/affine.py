@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Optional, Tuple
+import math
 import numpy as np
 from src.primitives.rectangle import Rectangle2D
 from src.transforms.transform_base import TransformBase2D
@@ -10,8 +11,8 @@ from src.transforms.translation import TranslationTransform2D
 
 class AffineTransform2D(TransformBase2D):
     """
-    Composed of rigid + non-uniform scale + shear transforms (Cannot
-    use similarity transform because it does not allow non-uniform scale).
+    Composed of rigid + non-uniform scale + shear transforms (CANNOT
+    use similarity transform because it does NOT allow non-uniform scale).
     Preserves: parallelism, straight lines.
     """
 
@@ -32,8 +33,38 @@ class AffineTransform2D(TransformBase2D):
         self._scale = ScaleTransform2D(sx, sy)
         self._shear = ShearTransform2D(shear_theta)
         self._rigid = RigidTransform2D(theta, tx, ty)
-        self._M: np.ndarray = self._rigid.M @ self._shear.M @ self._scale.M  # scale, shear, rigid
-        self._DoF: int = self._scale.DoF + self._shear.DoF + self._rigid.DoF  # 6
+        self._M: np.ndarray = self._rigid.M @ self._scale.M @ self._shear.M  # shear, scale, rigid
+        self._DoF: int = self._shear.DoF + self._scale.DoF + self._rigid.DoF  # 5 or 6 depending on scale
+
+    @property
+    def shear(self) -> ShearTransform2D:
+        """
+        Get the shear transform
+
+        Returns:
+            The shear transform
+        """
+        return self._shear
+
+    @property
+    def scale(self) -> ScaleTransform2D:
+        """
+        Get the scale transform
+
+        Returns:
+            The scale transform
+        """
+        return self._scale
+
+    @property
+    def rigid(self) -> RigidTransform2D:
+        """
+        Get the rigid transform
+
+        Returns:
+            The rigid transform
+        """
+        return self._rigid    
 
     @property
     def sx(self) -> float:
@@ -54,6 +85,7 @@ class AffineTransform2D(TransformBase2D):
             new_scale_x: New scale factor
         """
         self._scale.sx = new_scale_x
+        self.update_M()
 
     @property
     def sy(self) -> float:
@@ -74,6 +106,7 @@ class AffineTransform2D(TransformBase2D):
             new_scale_y: New scale factor
         """
         self._scale.sy = new_scale_y
+        self.update_M()
 
     @property
     def shear_theta(self) -> float:
@@ -86,14 +119,15 @@ class AffineTransform2D(TransformBase2D):
         return self._shear.theta
 
     @shear_theta.setter
-    def shear_theta(self, new_shear_theta: float) -> None:
+    def shear_theta(self, new_theta: float) -> None:
         """
         Set shear theta in the ShearTransform2D instance.
 
         Args:
-            new_shear_theta: New shear theta
+            new_theta: New theta
         """
-        self._shear.theta = new_shear_theta
+        self._shear.theta = new_theta
+        self.update_M()
 
     @property
     def theta(self) -> float:
@@ -114,6 +148,7 @@ class AffineTransform2D(TransformBase2D):
             theta: New theta in radians.
         """
         self._rigid.theta = new_theta
+        self.update_M()
 
     @property
     def tx(self) -> int:
@@ -134,6 +169,7 @@ class AffineTransform2D(TransformBase2D):
             new_tx: New translation distance
         """
         self._rigid.tx = new_tx
+        self.update_M()
 
     @property
     def ty(self) -> int:
@@ -154,6 +190,7 @@ class AffineTransform2D(TransformBase2D):
             new_ty: New translation distance
         """
         self._rigid.ty = new_ty
+        self.update_M()
 
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """
@@ -172,15 +209,48 @@ class AffineTransform2D(TransformBase2D):
             # Shift to origin, affine, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()
+        self.update_M()
         return rect
 
-    def reset(self) -> None:
+    def update_M(self) -> None:
         """
-        Reset M with instance variables.
+        Update M with instance variables.
         """
         super().reset()
-        self._M = self._rigid.M @ self._shear.M @ self._scale.M
+        self._M = self._rigid.M @ self._scale.M @ self._shear.M
+
+    def get_decomposed(self) -> Tuple[ShearTransform2D, ScaleTransform2D, RigidTransform2D]:
+        """
+        Decompose the matrix M into it's component shear, scale, and rigid matrices.
+        Do this as if component matrices are unknown. Do not change M.
+
+        Returns:
+            (shear transform, scale transform, rigid transform)
+        """
+        # translate x, translate y
+        tx, ty = self._M[0][2], self._M[1][2]
+        # Rotation, Scale, SHear
+        RSSH = self._M[:2, :2]
+        # Scale, SHear
+        SSH = np.linalg.cholesky(RSSH.T @ RSSH).T
+        # scale x, scale y
+        sx, sy = SSH[0][0], SSH[1][1]
+        # normalize to isolate shear value which is tangent(theta)
+        tan_theta = SSH[0][1] / sx
+        # 2x2 rotation matrix
+        R = RSSH @ np.linalg.inv(SSH)
+        # Account for reflection
+        if np.linalg.det(R) < 0:
+            Z[0] *= -1
+            ZS[0] *= -1
+            R = RSSH @ np.linalg.inv(SSH)
+
+        shear_theta = math.atan(tan_theta)
+        shear = ShearTransform2D(shear_theta)
+        scale = ScaleTransform2D(sx, sy)
+        theta = math.atan2(R[1][0], R[0][0])
+        rigid = RigidTransform2D(theta, tx, ty)
+        return shear, scale, rigid
         
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+from typing import Optional
 import math
 import numpy as np
 from src.transforms.transform_base import TransformBase2D
@@ -38,12 +39,14 @@ class RotationTransform2D(TransformBase2D):
     @theta.setter
     def theta(self, new_theta: float) -> None:
         """
-        Set the rotation angle in radians
+        Set the rotation angle in radians. Also update
+        the matrix with new theta to synchronize.
 
         Args:
             new_theta: New theta
         """
         self._theta = new_theta
+        self.update_M()
 
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """
@@ -62,12 +65,12 @@ class RotationTransform2D(TransformBase2D):
             # Shift to origin, rotate, shift back to object center
             self._M = to_center.M @ self._M @ to_origin.M
         rect = super().apply_to_rectangle(rect)
-        self.reset()
+        self.update_M()
         return rect
 
-    def reset(self) -> None:
+    def update_M(self) -> None:
         """
-        Reset M with instance variables.
+        Update M with instance variables.
         """
         super().reset()
         self._M[0][0] = math.cos(self._theta)
@@ -75,7 +78,24 @@ class RotationTransform2D(TransformBase2D):
         self._M[1][0] = math.sin(self._theta)
         self._M[1][1] = math.cos(self._theta)
 
+    def theta_from_M(self, m: Optional[np.ndarray] = None) -> float:
+        """
+        Use the matrix [1][0] position which is sin(theta), and
+        [0][0] position which is cos(theta). Take arctangent2 of
+        those values to get theta.
 
+        Args:
+            m: Any matrix (but should be rotation matrix)
+
+        Returns:
+            Theta
+        """
+        if m is None:
+            return math.atan2(self._M[1][0], self._M[0][0])
+        else:
+            return math.atan2(m[1][0], m[0][0])
+        
+        
 if __name__ == "__main__":
     pass
     

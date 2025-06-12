@@ -37,11 +37,13 @@ class TranslationTransform2D(TransformBase2D):
     def tx(self, new_tx: int) -> None:
         """
         Set new translation in x direction
+        and update M to synchronize.
 
         Args:
             new_tx: New translation distance
         """
         self._tx = new_tx
+        self._M[0][2] = new_tx
 
     @property
     def ty(self) -> int:
@@ -57,11 +59,13 @@ class TranslationTransform2D(TransformBase2D):
     def ty(self, new_ty: int) -> None:
         """
         Set new translation in y direction
+        and update M to synchronize.
 
         Args:
             new_ty: New translation distance
         """
         self._ty = new_ty
+        self._M[1][2] = new_ty
 
     def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
         """

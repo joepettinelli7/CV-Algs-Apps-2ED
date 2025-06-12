@@ -1,5 +1,6 @@
-from typing import Optional, List
+from typing import Optional, List, Any
 import numpy as np
+import math
 from src.primitives.point import Point2D
 from src.primitives.rectangle import Rectangle2D
 
@@ -154,7 +155,8 @@ class TransformBase2D:
         """
         Get the transforms (subclasses of TransformBase2D) that
         compose the transform. For example, rigid is composed
-        of rotation + translation.
+        of rotation + translation. This is when transforms are
+        built using the components (NOT when started with M).
 
         Returns:
             The transform component transforms.
@@ -188,7 +190,47 @@ class TransformBase2D:
             Radians
         """
         return degrees * (math.pi / 180)
+
+    def get_T_inv(self) -> np.ndarray:
+        """
+        Get the transposed inverse of M. This matrix
+        represents the transformation on a co-vector such
+        as a 2D line or 3D normal (page 34).
+
+        Returns:
+            The transposed inverse (M^-1)^T.
+        """
+        return np.linalg.inv(self._M).T
+
+    def get_inv(self) -> np.ndarray:
+        """
+        Get the inverse of M, which can be used to
+        reverse the transformation applied with M.
+
+        Returns:
+            The inverse (M^-1).
+        """
+        return np.linalg.inv(self._M)
+
+    def get_decomposed(self) -> Any:
+        """
+        Implemented for rigid, similarity, affine,
+        and projective transformation subclasses.
+        """
+        raise NotImplementedError
+
+    def __eq__(self, other: "TransformBase2D") -> bool:
+        """
+        Determine whether two transform matrices are equal.
+
+        Args:
+            other: Another transform matrix of TransformBase2D or subclass.
         
-    
+        Returns:
+            True if equal, False if not equal.
+        """
+        return np.allclose(self._M, other.M)
+        
+        
 if __name__ == "__main__":
     pass
