@@ -1,8 +1,6 @@
 from typing import Optional, List, Any
 import numpy as np
 import math
-from src.primitives.point import Point2D
-from src.primitives.rectangle import Rectangle2D
 
 
 class TransformBase2D:
@@ -27,21 +25,27 @@ class TransformBase2D:
             [0., 0., 1.]], dtype=float)
         self._DoF: int = -1
         self._from_origin: bool = False
-
+    
     def __repr__(self) -> str:
         """
         Use the matrix to represent transform.
-        
+    
         Returns:
             The transform name and the matrix along with
             the transforms that compose the transform.
         """
-        rep = f"{self.__class__.__name__}: {self._M}\n"
+        formatter = {'float_kind': lambda x: "%.4f" % x}
+        matrix_str = np.array2string(self._M, formatter=formatter, prefix='    ', separator='  ')
+        rep = f"{self.__class__.__name__}:\n    {matrix_str}"
         components = self.get_components()
-        if len(components) > 0:
-            rep += f" composed of {components}\n"
+        if components:
+            rep += "\ncomposed of:"
+            for comp in components:
+                comp_matrix = np.array2string(comp.M, formatter=formatter, prefix='    ', separator='  ')
+                rep += f"\n{comp.__class__.__name__}:\n    {comp_matrix}"
+        rep += "\n"
         return rep
-
+    
     @property
     def M(self) -> np.ndarray:
         """
@@ -106,44 +110,6 @@ class TransformBase2D:
         """
         self._from_origin = new_from_origin
 
-    def apply_to_point(self, point: Point2D, in_place: bool = True) -> Point2D:
-        """
-        Apply the matrix to a single point object.
-
-        Args:
-            point: The homogenous point to apply transform to.
-            in_place: Whether to transform the point in place.
-                      * Be careful when True because it can lead
-                        to a compounding effect when multiple transformations
-                        are applied to the same point inadvertently. *
-
-        Returns:
-            The transformed point.
-        """
-        transformed = np.dot(self._M, point.vector)
-        if in_place:
-            point.x, point.y, point.w = transformed[:3]
-            return point
-        else:
-            x, y, w = transformed[:3]
-            return Point2D(x, y, w)
-
-    def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
-        """
-        Apply the transform to the rectangle corners.
-        Apply transform to all 4 corner points that define
-        the rectangle in-place.
-
-        Args:
-            rect: Rectangle object
-
-        Returns:
-            The transformed rectangle
-        """
-        for idx, corner in enumerate(rect.corners):
-            rect[idx] = self.apply_to_point(corner)
-        return rect
-
     def reset(self) -> None:
         """
         Reset M to the same 3x3 identity matrix that
@@ -191,7 +157,7 @@ class TransformBase2D:
         """
         return degrees * (math.pi / 180)
 
-    def get_T_inv(self) -> np.ndarray:
+    def get_T_inv_M(self) -> np.ndarray:
         """
         Get the transposed inverse of M. This matrix
         represents the transformation on a co-vector such
@@ -202,7 +168,7 @@ class TransformBase2D:
         """
         return np.linalg.inv(self._M).T
 
-    def get_inv(self) -> np.ndarray:
+    def get_inv_M(self) -> np.ndarray:
         """
         Get the inverse of M, which can be used to
         reverse the transformation applied with M.
@@ -230,6 +196,25 @@ class TransformBase2D:
             True if equal, False if not equal.
         """
         return np.allclose(self._M, other.M)
+
+    def normalize_M(self) -> None:
+        """
+        Normalize by dividing M by bottom right value.
+        This will only change M if it is a projective
+        transform because the bottom row will not be 0, 0, 1.
+        Change M inplace.
+        """
+        self._M / self._M[2, 2]
+    
+    @property
+    def normalized_M(self) -> np.ndarray:
+        """
+        Normalize M and return new numpy array.
+
+        Returns:
+            The transform matrix with bottom right value equal to 1.
+        """
+        return self._M / self._M[2, 2]
         
         
 if __name__ == "__main__":

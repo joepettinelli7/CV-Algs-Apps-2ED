@@ -2,8 +2,6 @@ from typing import Optional
 import math
 import numpy as np
 from src.transforms.transform_base import TransformBase2D
-from src.transforms.translation import TranslationTransform2D
-from src.primitives.rectangle import Rectangle2D
 
 
 class RotationTransform2D(TransformBase2D):
@@ -47,26 +45,6 @@ class RotationTransform2D(TransformBase2D):
         """
         self._theta = new_theta
         self.update_M()
-
-    def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
-        """
-        Apply rotation to the rectangle corners.
-
-        Args:
-            rect: Rectangle object
-
-        Returns:
-            The rectangle with rotated corner points.
-        """
-        if not super().from_origin:
-            center = rect.center
-            to_origin = TranslationTransform2D(-center.x, -center.y)
-            to_center = TranslationTransform2D(center.x, center.y)
-            # Shift to origin, rotate, shift back to object center
-            self._M = to_center.M @ self._M @ to_origin.M
-        rect = super().apply_to_rectangle(rect)
-        self.update_M()
-        return rect
 
     def update_M(self) -> None:
         """

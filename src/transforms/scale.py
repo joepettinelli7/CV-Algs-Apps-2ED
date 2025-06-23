@@ -1,6 +1,4 @@
 from src.transforms.transform_base import TransformBase2D
-from src.transforms.translation import TranslationTransform2D
-from src.primitives.rectangle import Rectangle2D
 
 
 class ScaleTransform2D(TransformBase2D):
@@ -47,6 +45,7 @@ class ScaleTransform2D(TransformBase2D):
             new_sx: New scale factor
         """
         self._sx = new_sx
+        self.update_M()
     
     @property
     def sy(self) -> None:
@@ -67,28 +66,9 @@ class ScaleTransform2D(TransformBase2D):
             new_sy: New scale factor
         """
         self._sy = new_sy
+        self.update_M()
 
-    def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
-        """
-        Apply scale to the rectangle corners.
-
-        Args:
-            rect: Rectangle object
-
-        Returns:
-            The rectangle with scaled corner points.
-        """
-        if not super().from_origin:
-            center = rect.center
-            to_origin = TranslationTransform2D(-center.x, -center.y)
-            to_center = TranslationTransform2D(center.x, center.y)
-            # Shift to origin, scale, shift back to object center
-            self._M = to_center.M @ self._M @ to_origin.M
-        rect = super().apply_to_rectangle(rect)
-        self.reset()
-        return rect
-
-    def reset(self) -> None:
+    def update_M(self) -> None:
         """
         Reset M with instance variables.
         """

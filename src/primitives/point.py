@@ -1,3 +1,4 @@
+import math
 import logging
 from typing import Optional, Union, List
 import numpy as np
@@ -14,6 +15,9 @@ class Point2D:
     def __init__(self, x: float = 0.0, y: float = 0.0, w: float = 1.0) -> None:
         """
         """
+        assert isinstance(x, (float, int)), f"Can't have {x.__class__}"
+        assert isinstance(y, (float, int)), f"Can't have {y.__class__}"
+        assert isinstance(w, (float, int)), f"Can't have {w.__class__}"
         self._x = x
         self._y = y
         if w == 0.0:
@@ -128,7 +132,19 @@ class Point2D:
         self._x *= w
         self._y *= w
         self._w *= w
-
+    
+    def to_int(self, inplace: bool = True) -> Optional["Point2D"]:
+        """
+        Convert x, y to integer inplace and maintain w.
+        """
+        new_x = int(round(self._x / self._w) * self._w)
+        new_y = int(round(self._y / self._w) * self._w)
+        if inplace:
+            self._x = new_x
+            self._y = new_y
+        else:
+            return Point2D(new_x, new_y, self._w)
+    
     def normalize(self) -> None:
         """
         In-place normalize homogenous point so that w = 1.
@@ -155,6 +171,38 @@ class Point2D:
         else:
             logging.warning(" Point was at infinity, so aborted normalize.")
 
+    def copy(self) -> "Point2D":
+        """
+        Make a copy of point with equal x, y, w.
+
+        Returns:
+            New point object.
+        """
+        x, y, w = self._x, self._y, self._w
+        return Point2D(x, y, w)
+    
+    def apply_transform(self, M: np.ndarray, inplace: bool = False) -> "Point2D":
+        """
+        Apply the transform to the point. Use the M property
+        which contains the numpy array matrix.
+
+        Args:
+            M: The transform matrix.
+            inplace: If True, change x, y, z of this instance, else return new point instance.
+                     * Be careful when True because it can lead to a compounding effect when
+                     multiple transformations are applied to the same point inadvertently. *
+
+        Returns:
+            Either self or a new Point2D instance.
+        """
+        transformed = np.dot(M, self.vector)
+        x, y, w = transformed[0][0].item(), transformed[1][0].item(), transformed[2][0].item()
+        if inplace:
+            self._x, self._y, self._w = x, y, w
+            return self
+        else:
+            return Point2D(x, y, w)
+    
     def __eq__(self, other: "Point2D") -> bool:
         """
         Determine whether the points are equivalent.
@@ -169,13 +217,29 @@ class Point2D:
             True if points are equivalent
         """
         if self._w == 0.0 or other.w == 0.0:
-            x_eq = self._x == other.x
-            y_eq = self._y == other.y
+            x_eq = math.isclose(self._x, other.x, abs_tol=1e-8)
+            y_eq = math.isclose(self._y, other.y, abs_tol=1e-8)
         else:
-            x_eq = self._x / self._w == other.x / other.w
-            y_eq = self._y / self._w == other.y / other.w
+            x_eq = math.isclose(self._x / self._w, other.x / other.w, abs_tol=1e-8)
+            y_eq = math.isclose(self._y / self._w, other.y / other.w, abs_tol=1e-8)
         return x_eq and y_eq
 
+    def __hash__(self) -> int:
+        """
+        Get the hash value for the point. If two points are
+        __eq__  then the hash value must be the same. Round to 8
+        decimal places to match __eq__. Very small chance of collision.
+
+        Returns:
+            An integer hash value.
+        """
+        if self._w == 0:
+            return hash((round(self._x, 8), round(self._y, 8), 0))
+        else:
+            norm_x = self._x / self._w
+            norm_y = self._y / self._w
+            return hash((round(norm_x, 8), round(norm_y, 8), 1))
+    
     def __add__(self, other: "Point2D") -> "Point2D":
         """
         Add point with point
@@ -289,16 +353,6 @@ class Point2D:
         new_x = self._x / other
         new_y = self._y / other
         return Point2D(new_x, new_y, self._w)
-
-    def copy(self) -> "Point2D":
-        """
-        Make a copy of point with equal x, y, w.
-
-        Returns:
-            New point object.
-        """
-        x, y, w = self._x, self._y, self._w
-        return Point2D(x, y, w)
         
 
 if __name__ == "__main__":

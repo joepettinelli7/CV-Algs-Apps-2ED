@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Union, Iterator
 import numpy as np
 from src.primitives.point import Point2D
 from src.primitives.line import Line2D
@@ -6,18 +6,18 @@ from src.primitives.line import Line2D
 
 class Points2D:
     """
-    A class that holds multiple Point2D objects and performs
-    calculations on those points in their cartesian space.
+    A class that holds multiple Point2D objects and
+    performs calculations on those points.
     """
 
-    def __init__(self, points: Optional[list[Point2D]]) -> None:
+    def __init__(self, points: Optional[List[Point2D]] = None) -> None:
         if points:
-            self._points: list[Point2D] = points
+            self._points: List[Point2D] = points
         else:
-            self._points: list[Point2D] = []
+            self._points: List[Point2D] = []
     
     @property
-    def points(self) -> list[Point2D]:
+    def points(self) -> List[Point2D]:
         """
         All points belonging to instance.
         
@@ -25,7 +25,26 @@ class Points2D:
             The list of points
         """
         return self._points
+    
+    @points.setter
+    def points(self, new_points: List[Point2D]) -> None:
+        """
+        Set new points.
 
+        Args:
+            new_points: The new points
+        """
+        self._points = new_points
+
+    def __repr__(self) -> str:
+        """
+        Use the points to represent the points list.
+        
+        Returns:
+            The points
+        """
+        return f"Points2D({self._points})"
+    
     @property
     def num_points(self) -> int:
         """
@@ -35,7 +54,7 @@ class Points2D:
             Number of points
         """
         return len(self._points)
-
+    
     @property
     def array_form(self) -> Optional[np.ndarray]:
         """
@@ -46,10 +65,21 @@ class Points2D:
             nx3 array because (x, y, w) for each point.
         """
         if self.num_points > 0:
-            arr = np.empty((self.num_points, 3))           
-            for idx, p in enumerate(self._points):
-                arr[idx] = p.vector.T
-            return arr
+            return np.vstack([p.vector.T for p in self._points])
+        else:
+            return None
+    
+    @property
+    def cartesian_array_form(self) -> Optional[np.ndarray]:
+        """
+        Make an array with each row being a point. This
+        makes calculations easier with numpy.
+        
+        Returns:
+            nx2 array because (x, y) for each point.
+        """
+        if self.num_points > 0:
+            return np.vstack([p.cartesian_vector.T for p in self._points])
         else:
             return None
     
@@ -109,7 +139,7 @@ class Points2D:
             print(f"normal_vector: {normal_vector}\n")
             print(f"fit_line: {fit_line}\n")
         return fit_line
-
+    
     def calculate_covariance_matrix(self, verbose: bool = False) -> np.ndarray:
         """
         Calculate the covariance matrix of all points.
@@ -127,7 +157,49 @@ class Points2D:
             print(f"centered_points: {centered_points}\n")
             print(f"cov_mat: {cov_mat}\n")
         return cov_mat
+    
+    def apply_transform(self, M: np.ndarray, inplace: bool = False) -> "Points2D":
+        """
+        Apply the transform to the points. Use the M property
+        which contains the numpy array matrix.
 
+        Args:
+            M: The transform matrix.
+            inplace: If True, change points of this instance, else return new Points2D instance.
+                     * Be careful when True because it can lead to a compounding effect when
+                     multiple transformations are applied to the same points inadvertently. *
+
+        Returns:
+            Either self or a new Points2D instance.
+        """
+        transformed_points: List[Point2D] = []
+        for p in self._points:
+            transformed_point = p.apply_transform(M, inplace=inplace)
+            transformed_points.append(transformed_point)
+        if inplace:
+            self._points = transformed_points
+            return self
+        else:
+            return Points2D(transformed_points)
+    
+    def __eq__(self, other: "Points2D") -> bool:
+        """
+        Check whether list of points are equal.
+        Equal if all points are equal. Points should
+        be normalized to same w first.
+
+        * Very sensitive to small float differences.
+
+        Args:
+            other: Other points list.
+
+        Returns:
+            True if all points are equal, else False.
+        """
+        self_points = [p.normalized() for p in self._points]
+        other_points = [p.normalized() for p in other.points]
+        return set(self_points) == set(other_points)
+    
     def __sub__(self, other: Point2D) -> Optional["Points2D"]:
         """
         Subtract other point from list of points. This will
@@ -166,18 +238,33 @@ class Points2D:
             return self
         else:
             raise TypeError(f"Cannot subtract {other.__class__} object from Point2D object.")
-
-    def __getitem__(self, idx: int) -> Point2D:
+    
+    def __getitem__(self, idx: Union[int, slice]) -> Union[Point2D, "Points2D"]:
         """
-        Get the point from points
+        Get the point from points. Can handle slices.
 
         Args:
-            idx: The index
+            idx: The index or slice.
 
         Returns:
-            The point at index
+            The Point2D or Points2D with Point2D objects at index.
         """
-        return self._points[idx]
+        if isinstance(idx, int):
+            return self._points[idx]
+        elif isinstance(idx, slice):
+            return Points2D(self._points[idx])
+        else:
+            raise TypeError(f"Need int or slice, not {type(idx)}.")
+    
+    def __iter__(self) -> Iterator[Point2D]:
+        """
+        Iterator to iterate list of points. Needed
+        to work when unpacking Points2D object with *.
+
+        Returns:
+            Iterator for Point2D objects.
+        """
+        return iter(self._points)
 
 
 if __name__ == "__main__":

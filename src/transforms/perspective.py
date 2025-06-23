@@ -1,6 +1,4 @@
 from src.transforms.transform_base import TransformBase2D
-from src.transforms.translation import TranslationTransform2D
-from src.primitives.rectangle import Rectangle2D
 
 
 class PerspectiveTransform2D(TransformBase2D):
@@ -44,6 +42,7 @@ class PerspectiveTransform2D(TransformBase2D):
             new_per_x: New perspective x
         """
         self._per_x = new_per_x
+        self.update_M()
 
     @property
     def per_y(self) -> float:
@@ -64,28 +63,9 @@ class PerspectiveTransform2D(TransformBase2D):
             new_per_y: New perspective y
         """
         self._per_y = new_per_y
+        self.update_M()
 
-    def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
-        """
-        Apply perspective to the rectangle corners.
-
-        Args:
-            rect: Rectangle object
-
-        Returns:
-            The rectangle with perspective transformed corner points.
-        """
-        if not super().from_origin:
-            center = rect.center
-            to_origin = TranslationTransform2D(-center.x, -center.y)
-            to_center = TranslationTransform2D(center.x, center.y)
-            # Shift to origin, perspective, shift back to object center
-            self._M = to_center.M @ self._M @ to_origin.M
-        rect = super().apply_to_rectangle(rect)
-        self.reset()
-        return rect
-
-    def reset(self) -> None:
+    def update_M(self) -> None:
         """
         Reset M with instance variables.
         """

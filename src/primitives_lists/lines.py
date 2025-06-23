@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 import numpy as np
 from src.primitives.point import Point2D
 from src.primitives.line import Line2D
@@ -10,12 +10,12 @@ class Lines2D:
     and performs calculations on those lines.
     """
 
-    def __init__(self, lines: Optional[list[Line2D]]) -> None:
+    def __init__(self, lines: Optional[List[Line2D]] = None) -> None:
         if lines:
             self._lines: list[Line2D] = lines
         else:
             self._lines: list[Line2D] = []
-
+    
     @property
     def lines(self) -> list[Line2D]:
         """

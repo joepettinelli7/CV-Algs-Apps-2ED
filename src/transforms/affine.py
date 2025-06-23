@@ -1,12 +1,10 @@
 from typing import Optional, Tuple
 import math
 import numpy as np
-from src.primitives.rectangle import Rectangle2D
 from src.transforms.transform_base import TransformBase2D
 from src.transforms.rigid import RigidTransform2D
 from src.transforms.scale import ScaleTransform2D
 from src.transforms.shear import ShearTransform2D
-from src.transforms.translation import TranslationTransform2D
 
 
 class AffineTransform2D(TransformBase2D):
@@ -30,8 +28,8 @@ class AffineTransform2D(TransformBase2D):
             ty: Translation y distance
         """
         super().__init__()
-        self._scale = ScaleTransform2D(sx, sy)
         self._shear = ShearTransform2D(shear_theta)
+        self._scale = ScaleTransform2D(sx, sy)
         self._rigid = RigidTransform2D(theta, tx, ty)
         self._M: np.ndarray = self._rigid.M @ self._scale.M @ self._shear.M  # shear, scale, rigid
         self._DoF: int = self._shear.DoF + self._scale.DoF + self._rigid.DoF  # 5 or 6 depending on scale
@@ -192,45 +190,40 @@ class AffineTransform2D(TransformBase2D):
         self._rigid.ty = new_ty
         self.update_M()
 
-    def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
-        """
-        Apply affine transform (shear, scale, rigid) to the rectangle corners.
-
-        Args:
-            rect: Rectangle object
-
-        Returns:
-            The rectangle object with affine transformed corner points.
-        """
-        if not super().from_origin:
-            center = rect.center
-            to_origin = TranslationTransform2D(-center.x, -center.y)
-            to_center = TranslationTransform2D(center.x, center.y)
-            # Shift to origin, affine, shift back to object center
-            self._M = to_center.M @ self._M @ to_origin.M
-        rect = super().apply_to_rectangle(rect)
-        self.update_M()
-        return rect
-
     def update_M(self) -> None:
         """
         Update M with instance variables.
         """
         super().reset()
         self._M = self._rigid.M @ self._scale.M @ self._shear.M
-
+    
     def get_decomposed(self) -> Tuple[ShearTransform2D, ScaleTransform2D, RigidTransform2D]:
         """
-        Decompose the matrix M into it's component shear, scale, and rigid matrices.
+        This function acts as a wrapper to get_decomposed_from_M which
+        is the static version of this function and does calculations.
+
+        Returns:
+            (shear transform, scale transform, rigid transform)
+        """
+        return self.get_decomposed_from_M(self._M)
+    
+    @staticmethod
+    def get_decomposed_from_M(M: np.ndarray) -> Tuple[ShearTransform2D, ScaleTransform2D, RigidTransform2D]:
+        """
+        Decompose the matrix M into it's component shear, scale, and rigid matrices. This
+        decomposition function relied on composition order being shear, scale, rigid.
         Do this as if component matrices are unknown. Do not change M.
+
+        Args:
+            M: The affine transform matrix.
 
         Returns:
             (shear transform, scale transform, rigid transform)
         """
         # translate x, translate y
-        tx, ty = self._M[0][2], self._M[1][2]
+        tx, ty = M[0][2], M[1][2]
         # Rotation, Scale, SHear
-        RSSH = self._M[:2, :2]
+        RSSH = M[:2, :2]
         # Scale, SHear
         SSH = np.linalg.cholesky(RSSH.T @ RSSH).T
         # scale x, scale y
@@ -241,8 +234,8 @@ class AffineTransform2D(TransformBase2D):
         R = RSSH @ np.linalg.inv(SSH)
         # Account for reflection
         if np.linalg.det(R) < 0:
-            Z[0] *= -1
-            ZS[0] *= -1
+            sx *= -1
+            SSH[0] *= -1
             R = RSSH @ np.linalg.inv(SSH)
 
         shear_theta = math.atan(tan_theta)
@@ -251,8 +244,24 @@ class AffineTransform2D(TransformBase2D):
         theta = math.atan2(R[1][0], R[0][0])
         rigid = RigidTransform2D(theta, tx, ty)
         return shear, scale, rigid
-        
+    
+    @classmethod
+    def from_M(cls, M: np.ndarray) -> "AffineTransform2D":
+        """
+        Construct an AffineTransform2D object
+        from a 3x3 affine matrix by decomposing it.
 
+        Args:
+            M: A 3x3 matrix.
+
+        Returns:
+            An AffineTransform2D instance.
+        """
+        assert M.shape == (3, 3)
+        sh, sc, rig = cls.get_decomposed_from_M(M)
+        return cls(sc.sx, sc.sy, sh.theta, rig.theta, rig.tx, rig.ty)
+        
+        
 if __name__ == "__main__":
     pass
     

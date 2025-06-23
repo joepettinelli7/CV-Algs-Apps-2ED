@@ -1,6 +1,7 @@
 from typing import Union
 import pytest
 from src.primitives.point import Point2D
+from src.transforms.translation import TranslationTransform2D
 
 
 class TestPoint2D:
@@ -47,6 +48,32 @@ class TestPoint2D:
             assert p2.w == expected.w
         else:
             assert p2 is None
+    
+    def test_copy(self) -> None:
+        """
+        """
+        p1 = Point2D(1.0, 2.0, 1.0)
+        p1_copy = p1.copy()
+        new_x = 5.0
+        assert p1_copy is not p1
+        assert p1.x != new_x
+        p1.x = new_x
+        assert p1_copy.x != new_x
+
+    @pytest.mark.parametrize("inplace", (True, False))
+    def test_apply_transform(self, inplace: bool) -> None:
+        """
+        """
+        t = TranslationTransform2D(tx=10, ty=10)
+        p = Point2D(1.0, 2.0, 1.0)
+        new_point = p.apply_transform(t.M, inplace=inplace)
+        if inplace:
+            assert new_point is p
+        else:
+            assert new_point is not p
+        assert isinstance(new_point.x, float)
+        assert new_point.x == 11.0
+        assert new_point.y == 12.0
 
     @pytest.mark.parametrize(["points", "equal"], [((Point2D(4.0, 2.0, 2.0), Point2D(2.0, 1.0, 1.0)), True),
                                                    ((Point2D(4.0, 2.0, 1.0), Point2D(2.0, 1.0, 1.0)), False),
@@ -60,6 +87,19 @@ class TestPoint2D:
             assert points[0] == points[1]
         else:
             assert points[0] != points[1]
+
+    @pytest.mark.parametrize(["points", "equal"], [((Point2D(4.0, 2.0, 2.0), Point2D(2.0, 1.0, 1.0)), True),
+                                                   ((Point2D(4.0, 2.0, 1.0), Point2D(2.0, 1.0, 1.0)), False),
+                                                   ((Point2D(4.0, 3.0, 1.0), Point2D(4.0, 3.0, 1.0)), True),
+                                                   ((Point2D(4.0, 3.0, 0.0), Point2D(4.0, 3.0, 0.0)), True),
+                                                   ((Point2D(5.0, 3.0, 0.0), Point2D(4.0, 3.0, 0.0)), False)])
+    def test_hash(self, points: tuple[Point2D, Point2D], equal: bool) -> None:
+        """
+        """
+        if equal:
+            assert hash(points[0]) == hash(points[1])
+        else:
+            assert hash(points[0]) != hash(points[1])
 
     @pytest.mark.parametrize(["points", "expected"], [((Point2D(4.0, 2.0, 1.0), Point2D(2.0, 1.0, 0.0)), Point2D(6.0, 3.0, 1.0)),
                                                       ((Point2D(4.0, 3.0, 0.0), Point2D(1.0, 1.0, 0.0)), Point2D(5.0, 4.0, 0.0)),
@@ -107,16 +147,6 @@ class TestPoint2D:
         assert p1.x == expected.x
         assert p1.y == expected.y
         assert p1.w == expected.w
-
-    def test_copy(self) -> None:
-        """
-        """
-        p1 = Point2D(1.0, 2.0, 1.0)
-        p1_copy = p1.copy()
-        new_x = 5.0
-        assert p1.x != new_x
-        p1.x = new_x
-        assert p1_copy.x != new_x
         
 
 if __name__ == "__main__":

@@ -1,7 +1,6 @@
 from typing import Optional, Tuple
 import math
 import numpy as np
-from src.primitives.rectangle import Rectangle2D
 from src.transforms.transform_base import TransformBase2D
 from src.transforms.rotation import RotationTransform2D
 from src.transforms.translation import TranslationTransform2D
@@ -113,26 +112,6 @@ class RigidTransform2D(TransformBase2D):
         """
         self._translation.ty = new_ty
         self.update_M()
-
-    def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
-        """
-        Apply rigid transform (rotate then translate) to the rectangle corners.
-
-        Args:
-            rect: Rectangle object
-
-        Returns:
-            The rectangle with rigid transformed corner points.
-        """
-        if not super().from_origin:
-            center = rect.center
-            to_origin = TranslationTransform2D(-center.x, -center.y)
-            to_center = TranslationTransform2D(center.x, center.y)
-            # Shift to origin, rigid, shift back to object center
-            self._M = to_center.M @ self._M @ to_origin.M
-        rect = super().apply_to_rectangle(rect)
-        self.update_M()
-        return rect
 
     def update_M(self) -> None:
         """

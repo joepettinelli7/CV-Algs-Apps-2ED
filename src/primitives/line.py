@@ -195,7 +195,7 @@ class Line2D:
             The intersection point
         """
         intersec = np.cross(self.vector, other.vector, axis=0)
-        return Point2D(intersec[0], intersec[1], intersec[2])
+        return Point2D(intersec[0].item(), intersec[1].item(), intersec[2].item())
 
     def contains_point(self, point: Point2D) -> bool:
         """

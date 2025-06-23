@@ -36,26 +36,6 @@ class TestTransformBase2D:
             tb_fix.__repr__()
             patch_get.assert_called_once()
 
-    @pytest.mark.parametrize(["p", "inplace"], [(Point2D(2.0, 2.0, 2.0), True), (Point2D(2.0, 2.0, 2.0), False)])
-    def test_apply_to_point(self, tb_fix: TransformBase2D, p: Point2D, inplace: bool) -> None:
-        """
-        """
-        transformed_p = tb_fix.apply_to_point(p, inplace)
-        if inplace:
-            assert transformed_p is p
-        else:
-            assert transformed_p is not p
-            assert transformed_p == p
-
-    def test_apply_to_rectangle(self, tb_fix: TransformBase2D, rect_fix: Rectangle2D) -> None:
-        """
-        """
-        with patch.object(tb_fix, "apply_to_point") as patch_apply_point:
-            transformed_rect = tb_fix.apply_to_rectangle(rect_fix)
-            assert patch_apply_point.call_count == 4
-            assert transformed_rect is rect_fix
-            assert transformed_rect.corners == rect_fix.corners
-
     def test_reset(self, tb_fix: TransformBase2D) -> None:
         """
         """
@@ -77,16 +57,16 @@ class TestTransformBase2D:
         radians = tb_fix.to_radians(degrees)
         assert radians == math.pi / 2.0
 
-    def test_get_T_inv(self, tb_fix: TransformBase2D) -> None:
+    def test_get_T_inv_M(self, tb_fix: TransformBase2D) -> None:
         """
         """
-        T_inv = tb_fix.get_T_inv()
+        T_inv = tb_fix.get_T_inv_M()
         assert_array_equal(T_inv, tb_fix.M)
 
-    def test_get_inv(self, tb_fix: TransformBase2D) -> None:
+    def test_get_inv_M(self, tb_fix: TransformBase2D) -> None:
         """
         """
-        inv = tb_fix.get_inv()
+        inv = tb_fix.get_inv_M()
         assert_array_equal(inv, tb_fix.M)
 
     def test_get_decomposed(self, tb_fix: TransformBase2D) -> None:

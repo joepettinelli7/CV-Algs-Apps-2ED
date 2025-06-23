@@ -1,5 +1,4 @@
 import numpy as np
-from src.primitives.rectangle import Rectangle2D
 from src.transforms.transform_base import TransformBase2D
 
 
@@ -66,18 +65,6 @@ class TranslationTransform2D(TransformBase2D):
         """
         self._ty = new_ty
         self._M[1][2] = new_ty
-
-    def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
-        """
-        Apply translation to the rectangle corners.
-
-        Args:
-            rect: Rectangle object
-
-        Returns:
-            The rectangle with translated corner points.
-        """
-        return super().apply_to_rectangle(rect)
 
     def update_M(self) -> None:
         """

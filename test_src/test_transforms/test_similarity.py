@@ -69,16 +69,6 @@ class TestSimilarityTransform2D:
             sim_fix.ty = 10
             patch_update.assert_called_once()
 
-    @pytest.mark.parametrize("from_origin", (True, False))
-    def test_apply_to_rectangle(self, sim_fix: SimilarityTransform2D, rect_fix: Rectangle2D, from_origin: bool) -> None:
-        """
-        """
-        sim_fix.from_origin = from_origin
-        with patch.object(sim_fix, "update_M") as patch_update:
-            transformed_rect = sim_fix.apply_to_rectangle(rect_fix)
-            assert transformed_rect is rect_fix
-            patch_update.assert_called_once()
-
     def test_update_M(self, sim_fix: SimilarityTransform2D) -> None:
         """
         """

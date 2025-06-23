@@ -1,11 +1,9 @@
 from typing import Optional, Tuple
 import math
 import numpy as np
-from src.primitives.rectangle import Rectangle2D
 from src.transforms.transform_base import TransformBase2D
 from src.transforms.rigid import RigidTransform2D
 from src.transforms.scale import ScaleTransform2D
-from src.transforms.translation import TranslationTransform2D
 
 
 class SimilarityTransform2D(TransformBase2D):
@@ -156,26 +154,6 @@ class SimilarityTransform2D(TransformBase2D):
         """
         self._ty = new_ty
         self.update_M()
-
-    def apply_to_rectangle(self, rect: Rectangle2D) -> Rectangle2D:
-        """
-        Apply similarity transform (scale then rigid) to the rectangle corners.
-
-        Args:
-            rect: Rectangle object
-
-        Returns:
-            The rectangle with similarity transformed corner points.
-        """
-        if not super().from_origin:
-            center = rect.center
-            to_origin = TranslationTransform2D(-center.x, -center.y)
-            to_center = TranslationTransform2D(center.x, center.y)
-            # Shift to origin, similarity, shift back to object center
-            self._M = to_center.M @ self._M @ to_origin.M
-        rect = super().apply_to_rectangle(rect)
-        self.update_M()
-        return rect
 
     def update_M(self) -> None:
         """
