@@ -3,8 +3,7 @@ from typing import Optional
 import numpy as np
 from src.primitives.point import Point2D
 from src.primitives_lists.points import Points2D
-from src.transforms.transform_base import TransformBase2D
-from src.transforms.translation import TranslationTransform2D
+from src.transforms import *
 
 
 class Rectangle2D:
@@ -284,8 +283,135 @@ class Rectangle2D:
             True if all corner points are the same, else False.
         """
         return self.corners == other.corners
-        
     
+    def calculate_transform(self, other: "Rectangle2D", transform: TransformBase2D) -> TransformBase2D:
+        """
+        Calculate the transform matrix between self and the other rectangle.
+        The from_origin property from each returned transform should be set to True.
+
+        Args:
+            other: The other rectangle.
+            transform: The type of transform (a subclass of TransformBase2D).
+
+        Returns:
+            The transform matrix.
+        """
+        transform_name = transform.__class__.__name__.lower()
+        method_name = f"calculate_{transform_name}"
+        method_attr = getattr(self, method_name, None)  # no default
+        t: TransformBase2D = method_attr(other)
+        t.from_origin = True
+        return t
+    
+    def calculate_translationtransform2d(self, other: "Rectangle2D") -> TranslationTransform2D:
+        """
+        Calculate the translation transform matrix based on two rectangles.
+        Rectangle may also be scaled, but only calculate translation based
+        on the center point of both rectangles.
+
+        Args:
+            other: The other rectangle.
+
+        Returns:
+            The translation transform.
+        """
+        tx = other.center.x - self.center.x
+        ty = other.center.y - self.center.y
+        return TranslationTransform2D(tx, ty)
+    
+    def calculate_rotationtransform2d(self, other: "Rectangle2D") -> RotationTransform2D:
+        """
+        Calculate the rotation transform matrix based on two rectangles.
+
+        Args:
+            other: The other rectangle.
+
+        Returns:
+            The rotation transform.
+        """
+        raise NotImplementedError
+    
+    def calculate_scaletransform2d(self, other: "Rectangle2D") -> ScaleTransform2D:
+        """
+        Calculate the scale transform matrix based on two rectangles. Rectangle may
+        also be translated, but only calculate the scale based on width and height.
+
+        Args:
+            other: The other rectangle.
+
+        Returns:
+            The scale transform.
+        """
+        sx = other.width / self.width
+        sy = other.height / self.height
+        return ScaleTransform2D(sx, sy)
+    
+    def calculate_perspectivetransform2d(self, other: "Rectangle2D") -> PerspectiveTransform2D:
+        """
+        """
+        raise NotImplementedError
+    
+    def calculate_sheartransform2d(self, other: "Rectangle2D") -> ShearTransform2D:
+        """
+        """
+        raise NotImplementedError
+    
+    def calculate_rigidtransform2d(self, other: "Rectangle2D") -> RigidTransform2D:
+        """
+        """
+        raise NotImplementedError
+    
+    def calculate_similaritytransform2d(self, other: "Rectangle2D") -> SimilarityTransform2D:
+        """
+        """
+        raise NotImplementedError
+    
+    def calculate_affinetransform2d(self, other: "Rectangle2D") -> AffineTransform2D:
+        """
+        Calculate the affine transform between two rectangles. Only use three
+        corresponding points to exactly solve for 6 unknowns. Using all corners
+        will cause system to be overdetermined and will need to fit least squares.
+
+        Args:
+            other: The other rectangle.
+
+        Returns:
+            The affine transform.
+        """
+        self_use_corners: Points2D = self.corners[:3]
+        other_use_corners: Points2D = other.corners[:3]
+        self_arr = self_use_corners.array_form.T
+        other_arr = other_use_corners.array_form.T
+        M = other_arr @ np.linalg.inv(self_arr)
+        return AffineTransform2D.from_M(M)
+    
+    def calculate_projectivetransform2d(self, other: "Rectangle2D") -> ProjectiveTransform2D:
+        """
+        Calculate the projective transform between two rectangles.
+        Use four corresponding points and SVD. Projective transform
+        is defined up to scale, so it is normalized by bottom right value.
+
+        Args:
+            other: The other rectangle.
+
+        Returns:
+            The projective transform.
+        """
+        self_arr = self.corners.cartesian_array_form
+        other_arr = other.corners.cartesian_array_form
+        equation_matrix = []
+        for (self_x, self_y), (other_x, other_y) in zip(self_arr, other_arr):
+            equation_matrix.append([-self_x, -self_y, -1, 0, 0, 0, self_x * other_x, self_y * other_x, other_x])
+            equation_matrix.append([0, 0, 0, -self_x, -self_y, -1, self_x * other_y, self_y * other_y, other_y])
+        equation_matrix = np.array(equation_matrix)
+        _, _, Vt = np.linalg.svd(equation_matrix)
+        m = Vt[-1]
+        M = m.reshape(3, 3)
+        # Normalize
+        M = M / M[2, 2]
+        return ProjectiveTransform2D.from_M(M)
+        
+
 if __name__ == "__main__":
     pass
     

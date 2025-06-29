@@ -3,22 +3,12 @@ from unittest.mock import patch
 from numpy.testing import assert_allclose
 from src.transforms.transform_base import TransformBase2D
 from src.transforms.affine import AffineTransform2D
-from src.primitives.rectangle import Rectangle2D
 from src.primitives.point import Point2D
 
 
 @pytest.fixture
 def aff_fix() -> AffineTransform2D:
     return AffineTransform2D(sx=2.0, sy=2.0, shear_theta=0.39, theta=0.79, tx=160, ty=20)
-
-
-@pytest.fixture
-def rect_fix() -> Rectangle2D:
-    p1 = Point2D(1., 1., 1.)
-    p2 = Point2D(2., 1., 1.)
-    p3 = Point2D(2., 2., 1.)
-    p4 = Point2D(1., 2., 1.)
-    return Rectangle2D(p1, p2, p3, p4)
 
 
 class TestAffineTransform2D:

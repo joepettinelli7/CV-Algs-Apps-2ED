@@ -4,21 +4,11 @@ import math
 from numpy.testing import assert_array_equal
 from src.transforms.transform_base import TransformBase2D
 from src.primitives.point import Point2D
-from src.primitives.rectangle import Rectangle2D
 
 
 @pytest.fixture
 def tb_fix() -> TransformBase2D:
     return TransformBase2D()
-
-
-@pytest.fixture
-def rect_fix() -> Rectangle2D:
-    p1 = Point2D(1., 1., 1.)
-    p2 = Point2D(2., 1., 1.)
-    p3 = Point2D(2., 2., 1.)
-    p4 = Point2D(1., 2., 1.)
-    return Rectangle2D(p1, p2, p3, p4)
 
 
 class TestTransformBase2D:

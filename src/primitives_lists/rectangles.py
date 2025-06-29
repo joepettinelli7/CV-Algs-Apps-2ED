@@ -75,12 +75,8 @@ class Rectangles2D:
         """
         transforms: List[TransformBase2D] = []
         ref: Rectangle2D = self.reference
-        transform_name = transform.__class__.__name__.lower()
-        method_name = f"calculate_{transform_name}"
-        method_attr = getattr(self, method_name, None)  # no default
         for rect in self._rectangles[1:]:
-            t: TransformBase2D = method_attr(ref, rect)
-            t.from_origin = True
+            t: TransformBase2D = ref.calculate_transform(rect, transform)
             transforms.append(t)
         if len(transforms) == 1:
             return transforms[0]
@@ -99,9 +95,8 @@ class Rectangles2D:
         Returns:
             The translation transform.
         """
-        tx = query.center.x - ref.center.x
-        ty = query.center.y - ref.center.y
-        return TranslationTransform2D(tx, ty)
+        translation = ref.calculate_translationtransform2d(query)
+        return translation
     
     def calculate_rotationtransform2d(self, ref: Rectangle2D, query: Rectangle2D) -> RotationTransform2D:
         """
@@ -128,9 +123,8 @@ class Rectangles2D:
         Returns:
             The scale transform.
         """
-        sx = query.width / ref.width
-        sy = query.height / ref.height
-        return ScaleTransform2D(sx, sy)
+        scale = ref.calculate_scaletransform2d(query)
+        return scale
     
     def calculate_perspectivetransform2d(self, ref: Rectangle2D, query: Rectangle2D) -> PerspectiveTransform2D:
         """
@@ -165,12 +159,8 @@ class Rectangles2D:
         Returns:
             The affine transform.
         """
-        ref_use_corners: Points2D = ref.corners[:3]
-        query_use_corners: Points2D = query.corners[:3]
-        ref_arr = ref_use_corners.array_form.T
-        query_arr = query_use_corners.array_form.T
-        M = query_arr @ np.linalg.inv(ref_arr)
-        return AffineTransform2D.from_M(M)
+        affine = ref.calculate_affinetransform2d(query)
+        return affine
     
     def calculate_projectivetransform2d(self, ref: Rectangle2D, query: Rectangle2D) -> ProjectiveTransform2D:
         """
@@ -185,19 +175,8 @@ class Rectangles2D:
         Returns:
             The projective transform.
         """
-        ref_arr = ref.corners.cartesian_array_form
-        query_arr = query.corners.cartesian_array_form
-        equation_matrix = []
-        for (ref_x, ref_y), (query_x, query_y) in zip(ref_arr, query_arr):
-            equation_matrix.append([-ref_x, -ref_y, -1, 0, 0, 0, ref_x * query_x, ref_y * query_x, query_x])
-            equation_matrix.append([0, 0, 0, -ref_x, -ref_y, -1, ref_x * query_y, ref_y * query_y, query_y])
-        equation_matrix = np.array(equation_matrix)
-        _, _, Vt = np.linalg.svd(equation_matrix)
-        m = Vt[-1]
-        M = m.reshape(3, 3)
-        # Normalize
-        M = M / M[2, 2]
-        return ProjectiveTransform2D.from_M(M)
+        projective = ref.calculate_projectivetransform2d(query)
+        return projective
     
     def __getitem__(self, idx: int) -> Rectangle2D:
         """

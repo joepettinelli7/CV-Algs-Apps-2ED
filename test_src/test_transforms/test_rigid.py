@@ -5,21 +5,11 @@ from numpy.testing import assert_array_equal
 from src.transforms.transform_base import TransformBase2D
 from src.transforms.rigid import RigidTransform2D
 from src.primitives.point import Point2D
-from src.primitives.rectangle import Rectangle2D
 
 
 @pytest.fixture
 def rigid_fix() -> RigidTransform2D:
     return RigidTransform2D(theta=0.79, tx=160, ty=20)
-
-
-@pytest.fixture
-def rect_fix() -> Rectangle2D:
-    p1 = Point2D(1., 1., 1.)
-    p2 = Point2D(2., 1., 1.)
-    p3 = Point2D(2., 2., 1.)
-    p4 = Point2D(1., 2., 1.)
-    return Rectangle2D(p1, p2, p3, p4)
 
 
 class TestRigidTransform2D:

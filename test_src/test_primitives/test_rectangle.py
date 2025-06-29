@@ -124,7 +124,7 @@ class TestRectangle2D:
         assert rect == new_rect
         rect.left_top = rect.left_top - Point2D(1.0, 1.0, 1.0)
         assert rect != new_rect
-
+        
 
 if __name__ == "__main__":
     pass
