@@ -37,8 +37,8 @@ class CanvasHandler2D:
         # All transforms (1 per additional rectangle)
         self._all_transforms: List[TransformBase2D] = []
         # Save and load buttons
-        self._save_button = Button(description="Save", layout=Layout(width='40', height='30'))
-        self._load_button = Button(description="Load", layout=Layout(width='40', height='30'))
+        self._save_button = Button(description="Save", layout=Layout(width='70', height='30'))
+        self._load_button = Button(description="Load", layout=Layout(width='70', height='30'))
     
     def setup(self) -> None:
         """
