@@ -15,9 +15,9 @@ class Point2D:
     def __init__(self, x: float = 0.0, y: float = 0.0, w: float = 1.0) -> None:
         """
         """
-        assert isinstance(x, (float, int)), f"Can't have {x.__class__}"
-        assert isinstance(y, (float, int)), f"Can't have {y.__class__}"
-        assert isinstance(w, (float, int)), f"Can't have {w.__class__}"
+        assert isinstance(x, float), f"Can't have {x.__class__}"
+        assert isinstance(y, float), f"Can't have {y.__class__}"
+        assert isinstance(w, float), f"Can't have {w.__class__}"
         self._x = x
         self._y = y
         if w == 0.0:
@@ -353,6 +353,20 @@ class Point2D:
         new_x = self._x / other
         new_y = self._y / other
         return Point2D(new_x, new_y, self._w)
+
+
+class Point3D(Point2D):
+
+    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0, w: float = 1.0) -> None:
+        super().__init__(x=x, y=y, w=w)
+        assert isinstance(z, float), f"Can't have {z.__class__}"
+        self._z = z
+
+    @property
+    def z(self) -> float:
+        """
+        """
+        return self._z
         
 
 if __name__ == "__main__":

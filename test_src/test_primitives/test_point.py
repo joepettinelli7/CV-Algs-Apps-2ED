@@ -1,6 +1,6 @@
 from typing import Union
 import pytest
-from src.primitives.point import Point2D
+from src.primitives.point import Point2D, Point3D
 from src.transforms.translation import TranslationTransform2D
 
 
@@ -147,6 +147,16 @@ class TestPoint2D:
         assert p1.x == expected.x
         assert p1.y == expected.y
         assert p1.w == expected.w
+
+
+class TestPoint3d:
+
+    def test_init(self) -> None:
+        point = Point3D()
+        assert point._x == 0.0
+        assert point._y == 0.0
+        assert point._z == 0.0
+        assert point._w == 1.0
         
 
 if __name__ == "__main__":
